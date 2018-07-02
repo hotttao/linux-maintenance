@@ -158,8 +158,8 @@
     * [30.5 点评实战应用-varnish性能优化及进阶](30-企业级http缓存服务加速-varnish应用与实战/点评实战应用-varnish性能优化及进阶.md)
 * [31. pxe与cobbler实战](31-pxe与cobbler实战/README.md)
     * [31.1 dhcp服务简介](31-pxe与cobbler实战/dhcp服务简介.md)
-    * [31.2 pxe应用入门(一)](31-pxe与cobbler实战/pxe应用入门(一).md)
-    * [31.3 pxe应用入门(二)](31-pxe与cobbler实战/pxe应用入门(二).md)
+    * [31.2 pxe应用入门(一)](31-pxe与cobbler实战/pxe应用入门(一)
+    * [31.3 pxe应用入门(二)](31-pxe与cobbler实战/pxe应用入门(二)
     * [31.4 pxe与cobbler](31-pxe与cobbler实战/pxe与cobbler.md)
     * [31.5 cobbler应用](31-pxe与cobbler实战/cobbler应用.md)
 * [32. 自动运维ansible企业级应用与实战](32-自动运维ansible企业级应用与实战/README.md)
@@ -174,3 +174,4 @@
     * [33.2 zabbix安装与入门及常见配置](33-企业级开源监控鹰眼系统-zabbix入门到精通/zabbix安装与入门及常见配置.md)
     * [33.3 zabbix监控项及核心功能模块](33-企业级开源监控鹰眼系统-zabbix入门到精通/zabbix监控项及核心功能模块.md)
     * [33.4 生产环境实现zabbix监控部署和高级进阶](33-企业级开源监控鹰眼系统-zabbix入门到精通/生产环境实现zabbix监控部署和高级进阶.md)
+
