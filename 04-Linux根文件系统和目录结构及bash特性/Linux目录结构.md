@@ -53,8 +53,8 @@ sites, distributions, applications, documentation, etc.
 - `srv/`: 当前主机为服务提供的数据
 - `tmp`: 为哪些会产生临时文件的程序提供的用于存储临时文件的目录
 - `usr/`: shareable, read-only data，独立的层级目录，存放全局共享的只读数据路径
-	- `bin/`: 
-	- `sbin/`: 非管理或维护系统运行所必须的，额外添加的管理命令 
+	- `bin/`:
+	- `sbin/`: 非管理或维护系统运行所必须的，额外添加的管理命令
 	- `lib`:
 	- `lib64`:
 	- `includ/`: C 程序头文件
@@ -74,10 +74,10 @@ sites, distributions, applications, documentation, etc.
 	- `run/`: Data relevant to running processes
 	- `spool/`: Application spool data
 	- `tmp/`: Temporary files preserved between system reboots
-- `proc/`: 
+- `proc/`:
 	- 基于内存的虚拟文件系统，用于为内核及进程存储其相关信息；
 	- 它们多为内核参数，例如net.ipv4.ip_forward, 虚拟为net/ipv4/ip_forward, 存储于/proc/sys/, 因此其完整路径为/proc/sys/net/ipv4/ip_forward；
-- `sys/`: 
+- `sys/`:
 	- 用于挂载sysfs虚拟文件系统
 	- 提供了一种比proc更为理想的访问内核数据的途径；
 	- 其主要作用在于为**管理Linux设备**提供一种统一模型的的接口；
@@ -91,6 +91,13 @@ sites, distributions, applications, documentation, etc.
 
 ## 5. Linux 系统上的文件类型
 ### 5.1 常见文件类型：
+```
+> ll
+drwxrwxr-x.  2 tao tao  158 2月  25 18:32 anki
+drwxrwxr-x.  3 tao tao   43 2月  24 18:36 coding
+drwxrwxr-x.  4 tao tao   53 1月  30 14:11 linux
+```
+`ls -l` 命令显示结果第一列的首子母即表示文件类型，Linux 中的文件类型如下
 - `-`：常规文件；即f；
 - `d`: directory，目录文件(路径映射)
 - `b`: block device，块设备文件，支持以“block”为单位进行随机访问
@@ -104,9 +111,9 @@ sites, distributions, applications, documentation, etc.
 ```
 > ll /dev
 # 10, 58 表示设备的设备号
-crw-------. 1 root root     10,  58 6月  19 21:35 network_latency 
+crw-------. 1 root root     10,  58 6月  19 21:35 network_latency
 crw-------. 1 root root     10,  57 6月  19 21:35 network_throughput
 ```
-设备号:
+设备文件还有设备号，其作用如下:
 - major number：主设备号，用于标识设备类型，进而确定要加载的驱动程序; 8位二进制：0-255
 - minor number：次设备号，用于标识同一类型中的不同的设备; 8位二进制：0-255
