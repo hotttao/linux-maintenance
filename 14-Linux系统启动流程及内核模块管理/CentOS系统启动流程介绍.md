@@ -78,7 +78,6 @@ vmlinuz-
     - 功能：
         - 提供一个菜单，允许用户选择要启动的系统或不同的内核版本； 
         - 把用户选定的内核装载到RAM中的特定空间中，解压、展开，而后把系统控制权移交给内核
-    - 注意: BootLoader 只能驱动基本设备，无法驱动
     - Windows：ntloader
     - Linux：
         - LILO：LIinux  LOader
@@ -122,9 +121,12 @@ vmlinuz-
 ### 1.3 总结:系统初始化流程（内核级别）
 1. POST自检，
 2. 按照BootSequence(BIOS)查找能开机启动的设备
-3. 在设备的 MBR上加载 BootLoader，BootLoader 去磁盘分区上读取内核，需要注意的是BootLoader 是需要和磁盘分区打交道的，而BootLoader 本身一般是无法驱动那些软设备，逻辑设备(LVM),也无法驱动RAID这些复杂的逻辑结构，因此内核只能放在基本的磁盘分区上。
+3. 在设备的 MBR上加载 BootLoader，BootLoader 去磁盘分区上读取内核。
 4. Kernel可能会借助于 ramdisk 加载真正根文件系统所在设备的驱动程序
 5. 内核装载 rootfs（readonly，并执行开机启动程序 `/sbin/init`
+
+
+需要说明的是无论是下述的 ramdisk 还是 BootLoader 都是在安装操作系统时针对当前硬件生成的。所以 BootLoader 是能够识别当前主机的硬盘设备的。但是需要注意的是BootLoader 是需要和磁盘分区打交道的，而BootLoader 本身一般是无法驱动那些软设备，逻辑设备(LVM),也无法驱动RAID这些复杂的逻辑结构，因此内核只能放在基本的磁盘分区上。
 
 
 ## 2. init 程序
