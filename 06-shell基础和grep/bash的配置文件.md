@@ -43,10 +43,10 @@ bashrc:
 - 注意：仅管理员可修改全局配置文件；
 
 ## 3. 配置文件的生效过程
-**交互式登录shell进程**,会按照如下顺序读取配置文件
+**交互式登录shell进程**，配置文件的读取次序为
 `/etc/profile --> /etc/profile.d/* --> ~/.bash_profile --> ~/.bashrc --> /etc/bashrc`
 
-**非交互式登录shell进程**,会按照如下顺序读取配置文件
+**非交互式登录shell进程**，配置文件的读取次序为
 `~/.bashrc --> /etc/bashrc --> /etc/profile.d/*`
 
 需要注意的配置文件和命令行定义的配置具有不同的生效时间:

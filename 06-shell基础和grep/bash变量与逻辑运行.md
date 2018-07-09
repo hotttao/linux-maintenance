@@ -74,7 +74,7 @@ shell 中变量的查看和销毁有如下几个命令:
 ### 1.5 变量声明
 bash 中变量声明的命令有 declare, export, readonly，它们都是 bash 的内置命令，用法如下
 
-` export [name[=value]`
+`export [name[=value]`
 - 不带参数显示所有变量及其内容
 - 带参数用于声明环境变量
 

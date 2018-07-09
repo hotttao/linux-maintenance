@@ -91,24 +91,19 @@ grub> setup (hd#)
 ```
 
 
-## grub2
+## 3. grub2
 ### grub2 命令行的使用
-grub 2 及grub2 命令行的使用可以参考此篇博客，非常详细 https://linux.cn/article-6892-1.html 。接下来通过一个在 grub2 命令上启动操作系统的示例来演示 grub2 命令的使用
+grub 2 及grub2 命令行的使用可以参考此篇博客，非常详细 https://linux.cn/article-6892-1.html 。接下来通过一个在 grub2 命令上启动操作系统的示例来演示 grub2 命令的使用，grub2 命令行支持 tab 自动补全
 ```
 grub> ls      # 查看当前的磁盘分区设备
 (hd0), (hd0, msdos1), (hd0, msdos2)
 
 grub> set root=(hd0, msdos1)  # 设置根设备
 grub> ls /  # 查看当前设备内的文件
-..........
-
-grub> linux /vmlinux-VERSION-releaser ro root=/dev/mapper/cl-root # 设置内核位置
-grub> initrd /initramfs-VErSION-releaser # 设置 initramdisk 位置，文件支持 tab 自动补全
-grub> insmod gizo
+grub> linux /vmlinux-VERSION-releaser ro root=/dev/mapper/centos-root # 设置内核和跟目录
+grub> initrd /initramfs-VErSION-releaser         # 设置 initramdisk 
+grub> insmod gizo                                # 装载必要的驱动模块
 grub> insmod xfs
 grub> insmod part_msdos
-grub>
-grub>
-grub>
-
+grub> boot                                      # 启动开机流程
 ```
