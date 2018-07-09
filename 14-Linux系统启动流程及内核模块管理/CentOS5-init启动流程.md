@@ -22,12 +22,12 @@
 - 级别切换：`init level`
 - 级别查看：
     - `who -r`
-    - `runlevel` 
+    - `runlevel`
 
-### 1.2 配置文件：/etc/inittab 
+### 1.2 配置文件：/etc/inittab
 `/etc/inittab`
 - 作用: 每行定义一种 action 以及与之对应的 process
-- 格式: `id:runlevels:action:process` 
+- 格式: `id:runlevels:action:process`
     - `id`：一个任务的标识符；
     - `runlevels`：在哪些级别启动此任务，格式如下:
     	- n: 单个数字例如 2，表示仅在第二级别
@@ -35,7 +35,7 @@
     	- 也可以为空，表示所有级别；
     - `action`：在什么条件下启动此任务；
     - `process`：任务；
-            
+
 **action**：
 - wait：等待切换至此任务所在的级别时执行一次；
 - respawn：一旦此任务终止，就自动重新启动之；
@@ -58,7 +58,7 @@ tty6:2345:respawn:/usr/sbin/mingetty tty6
 # mingetty会调用login程序；
 # 打开虚拟终端的程序除了mingetty之外，还有诸如getty等；
 ```
-                    
+
 **rc 脚本框架：**
 ```
 for  srv  in  /etc/rc.d/rc#.d/K*; do
@@ -73,7 +73,7 @@ done
 - rc 3: 意味着去启动或关闭/etc/rc.d/rc3.d/目录下的服务脚本所控制服务；
 - K\*：要停止的服务；K\#\#\*，优先级，数字越小，越是优先关闭；依赖的服务先关闭，而后关闭被依赖的；
 - S\*：要启动的服务；S\#\#\*，优先级，数字越小，越是优先启动；被依赖的服务先启动，而依赖的服务后启动；
-- rc\#.d/ 目录下所有文件都是链接文件，连接到 /etc/rc.d/init.d/ 
+- rc\#.d/ 目录下所有文件都是链接文件，连接到 /etc/rc.d/init.d/
 
 ```
 > ls /etc/rd.d/
@@ -90,8 +90,8 @@ chkconfig命令：
 - 作用: 管控/etc/init.d/每个服务脚本在各级别下的启动或关闭状态；
 - 添加：`chkconfig  --add  name`
 	- 作用: 将 name 脚本添加到service 命令的控制中，并按照脚本中 chkconfig 的配置在对应级别下设置开机启动，其他级别下设置开机关闭
-- 启动/关闭指定级别服务： 
-    - `chkconfig  [--level  LEVELS]  name  on|off|reset` 
+- 启动/关闭指定级别服务：
+    - `chkconfig  [--level  LEVELS]  name  on|off|reset`
     - `--level LEVELS`：指定要控制的级别；默认为2345；
 - 查看：`chkconfig  --list  [name]`
 - 删除：`chkconfig  --del  name`
@@ -103,7 +103,7 @@ chkconfig命令：
 
 #!/bin/bash
 # testsrv  serviec testing script
-# 
+#
 # chkconfig: 234  50 60
 # description:  testing service
 
@@ -147,10 +147,10 @@ fi
 ```
 
 
-### 1.5 总结（用户空间的启动流程）： 
-`/sbin/init (/etc/inittab)` 
-1. 设置默认运行级别 
-3. 运行系统初始化脚本(`/etc/rc.d/rc.sysinit`)，完成系统初始化 
+### 1.5 总结（用户空间的启动流程）：
+`/sbin/init (/etc/inittab)`
+1. 设置默认运行级别
+3. 运行系统初始化脚本(`/etc/rc.d/rc.sysinit`)，完成系统初始化
 	- 设置主机名
 	- 设置欢迎信息
 	- 激活udev和selinux
@@ -161,20 +161,20 @@ fi
 	- 激活lvm及软raid设备
 	- 激活swap设备
 	- 加载额外设备的驱动程序
-	- 清理操作 
+	- 清理操作
 4. 关闭对应级别下需要停止的服务，启动对应级别下需要开启的服务
-5. 设置登录终端 
+5. 设置登录终端
 6. [--> 启动图形终端]
-    
+
 
 ### 2. CentOS 6：
 Centos 6 中init程序为 upstart，但依然为/sbin/init 配置文件包括如下:
-    - /etc/init/\*.conf
-    - /etc/inittab（仅用于定义默认运行级别）
-    - 注意：\*.conf为upstart风格的配置文件，需遵循其配置语法；
-        - rcS.conf
-        - rc.conf
-        - start-ttys.conf
+- /etc/init/\*.conf
+- /etc/inittab（仅用于定义默认运行级别）
+- 注意：\*.conf为upstart风格的配置文件，需遵循其配置语法；
+    - rcS.conf
+    - rc.conf
+    - start-ttys.conf
 
 CentOS 6启动流程：
 - POST --> Boot Sequence(BIOS) --> Boot Loader (MBR) --> Kernel(ramdisk) --> rootfs --> switchroot --> /sbin/init -->(/etc/inittab, /etc/init/\*.conf) --> 设定默认运行级别 --> 系统初始化脚本 --> 关闭或启动对应级别下的服务 --> 启动终端
