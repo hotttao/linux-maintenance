@@ -22,7 +22,7 @@
     * [6.1 bash变量与逻辑运行](06-shell基础和grep/bash变量与逻辑运行.md)
     * [6.2 bash配置文件](06-shell基础和grep/bash配置文件.md)
     * [6.3 grep命令与正则表达式](06-shell基础和grep/grep命令与正则表达式.md)
-    * [6.4 egrep进阶](06-shell基础和grep/egrep进阶.md)
+    * [6.4 文本处理命令](06-shell基础和grep/文本处理命令.md)
 * [7. vim及文件查找应用](07-vim/README.md)
     * [7.1 vim深入讲解](07-vim/vim深入讲解.md)
     * [7.2 vim高级用法进阶](07-vim/vim高级用法进阶.md)

@@ -105,3 +105,38 @@ She loves her liker.
 He loves his lover.
 She likes her liker.
 ```
+
+## 3. 扩展正则表达式
+扩展正则表达式与基本正则表达式主要有两点区别
+1. 不需要额外的转义符`\`,词首词尾锚定仍为 `\<`,`\>`, `\b`
+2. 支持 `|` 表示或
+	- a|b：a或者b；
+	- C|cat：C或cat
+	- (c|C)at：cat或Cat
+
+```
+# 练习：
+# 1. 找出/proc/meminfo文件中，所有以大写或小写S开头的行；至少有三种实现方式；
+>  grep -i "^s" /proc/meminfo
+>  grep "^[sS]" /proc/meminfo
+>  grep -E "^(s|S)" /proc/meminfo
+
+# 2. 显示肖前系统上root、centos或user1用户的相关信息；
+>  grep -E "^(root|centos|user1)\>" /etc/passwd
+
+# 3. 找出/etc/rc.d/init.d/functions文件中某单词后面跟一个小括号的行；
+>  grep  -E  -o  "[_[:alnum:]]+\(\)"  /etc/rc.d/init.d/functions
+
+# 4. 使用echo命令输出一绝对路径，使用egrep取出基名；
+>  echo /etc/sysconfig/ | grep  -E  -o  "[^/]+/?$"
+
+# 5. 进一步：取出其路径名；类似于对其执行dirname命令的结果；
+
+# 6. 找出ifconfig命令结果中的1-255之间的数值；
+>  ifconfig | grep  -E  -o  "\<([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\>"
+
+# 7. 课外作业：找出ifconfig命令结果中的IP地址；
+
+# 8. 添加用户bash, testbash, basher以及nologin(其shell为/sbin/nologin)；找出/etc/passwd文件中用户名同shell名的行；
+>  grep  -E  "^([^:]+\>).*\1$"  /etc/passwd
+```
