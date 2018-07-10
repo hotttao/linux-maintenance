@@ -8,10 +8,30 @@
 4. 安装 grub2
 5. 开机过程中常见问题解决
 
+## 1. grub2 概述
+grub2 支持 efi，比 grub 更加复杂，本人对比并不是很懂。关于 grub2 的详细描述可以参考这篇博文[Grub 2：拯救你的 bootloader](https://linux.cn/article-6892-1.html)
+
+### 1.1 认识 grub2 菜单
+![grub_menu](../images/14/grub_menue.jpg)
+正常开机启动后，我们就会看到一个类似上图的grub 开机启动菜单界面。
+1. 使用上下键，可以选择开机启动项
+2. 按下 `e` 键就可以编辑光标所在项的启动选项
+3. 按下 `c` 键就可以进入 grub 的命令行
+默认情况下，如果不做任何选择，五秒之后系统在默认的开机启动项上开机启动，如果进行了上述任何一个操作则必须按下确认键才能启动操作系统。
+
+
+### 1.2 设备表示
+grub2 设备的表示方式与 grub 并不相同，内核文件的路径同样与 grub2 根设备相关
+1. grub2 中设备从 0 开始编号，而分区则是从 1 开始编号
+2. MBR 和 GPT 两种分区格式表示并不相同
+	- `(hd0,1)`： 一般的默认语法，由 grub2 自动判断分区格式
+	- `(hd0,msdos1)`： 此磁盘的分区为传统的 MBR 模式
+	- `(hd0,gpt1)`：此磁盘的分区为 GPT 模式
 
 
 ## 2. grub2 命令行的使用
-grub 2 及grub2 命令行的使用可以参考此篇博客，非常详细 https://linux.cn/article-6892-1.html 。接下来通过一个在 grub2 命令上启动操作系统的示例来演示 grub2 命令的使用，grub2 命令行支持 tab 自动补全
+下面是在 grub2 命令行中直接启动操作系统的示例，可以看到 grub2 更加接近我们 bash。
+
 ```
 grub> ls      # 查看当前的磁盘分区设备
 (hd0), (hd0, msdos1), (hd0, msdos2)
@@ -26,9 +46,25 @@ grub> insmod part_msdos
 grub> boot                                      # 启动开机流程
 ```
 
+
 ## 3. grub2 的配置文件
+grub2 配置文件已经按照 Centos7 的风格分成多段，每段都有特殊作用。并增加了 `grub2-mkconfig -o /boot/grub2/grub.cfg` 命令，帮助生成 grub2 的配置文件。
+
 
 ## 4. 安装 grub2
+`grub2-install --root-directory=ROOT /dev/DISK`
+- ROOT 为 boot 目录所在的父目录
+
+```
+> mkdir /mnt/boot
+> mount /dev/sdb1 /mnt/boot   # /dev/sdb1 为 /boot 目录所在的分区
+> grub2-install --root-directory=/mnt /dev/sdb 
+    # /boot 的父目录是 /mnt
+    # grub stage1 此时会安装到 sdb 的 MBR 中
+
+> grub-install --root-directory=/mnt /dev/sdb1
+    # grub stage1 此时会安装到 sdb 第一个分区的 boot sector 中
+```
 
 ## 5. 开机过程中常见问题解决
 ### 5.1 忘记开机密码
