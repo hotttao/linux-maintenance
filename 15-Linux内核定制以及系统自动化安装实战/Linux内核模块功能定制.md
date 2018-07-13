@@ -1,57 +1,60 @@
 # 15.1 Linux内核模块功能定制
+内核编译是一个大工程，需要对硬件，内核各个参数功能都有比较深入了解，才能编译出有特定功能需求的内核。本节主要是带大家了解内核的编译过程，能编译成功即可。本节内容如下:
+1. 编译内核的环境准备
+2. 根据当前操作系统的编译模板，编译内核
 
 ## 1. 编译内核
-- 程序包的编译安装：./configure, make, make install
-- 前提：开发环境（开发工具，开发库），头文件：/usr/include
-    - 准备好开发环境；
-    - 获取目标主机上硬件设备的相关信息；
-    - 获取到目标主机系统功能的相关信息，例如要启用的文件系统；
-    - 获取内核源代码包：www.kernel.org
+在编译内核之前，我们需要了解目标主机的功能需求，并准备好开发环境，具体可包括如下几个方面:
+1. 准备好开发环境；
+2. 获取目标主机上硬件设备的相关信息；
+3. 获取到目标主机系统功能的相关信息，例如要启用的文件系统；
+4. 获取内核源代码包：http://www.kernel.org
 
-### 1.1 准备开发环境：
-CentOS 6：
-- 包组：
-    - Development Tools
-    - Server Platform Development
+### 1.1 准备开发环境
+开发环境主要是准备编译环境，Centos6-7 中安装如下两个包组即可:
+1. `Development Tools`: 中文下叫"开发工具"
+2. `Server Platform Development`: 中文下叫 "服务器平台开发"
 
-CentOS 7：
-- 包组：
-    - Development Tools
-    - Server Platform Development
-- 包：
-    - ncurses-devel
+Centos7 需要额外安装 `ncurses-devel` 包
 
-### 1.2 获取目标主机上硬件设备的相关信息：
-- CPU：
-    - cat  /proc/cpuinfo
-    - lscpu
-    - x86info -a
-- PCI设备：
-    - lspci
-        - -v
-        - -vv
-    - lsusb: usb 信息
-        - -v
-        - -vv
-    - lsblk: 块设备信息
-- 了解全部硬件设备信息：
-    - hal-device
+### 1.2 获取目标主机上硬件设备的相关信息
+Linux 中有如下命令，可以帮助我们获取硬件设备的相关信息包括:
+1. CPU：
+    - `cat  /proc/cpuinfo`
+    - `lscpu`
+    - `x86info -a`
+2. PCI设备：
+    - `lspci [-v|-vv]`
+    - `lsusb [-v|-vv]`: 显示 usb 信息
+    - `lsblk`: 显示块设备信息
+3. 了解全部硬件设备信息：`hal-device`(Centos6)
 
 ## 2. 内核编译过程：
+内核的编译与程序包的编译安装过程类似，遵循`./configure` ==> `make` ==> `make install`。接下来我们将利用现有操作系统的编译安装模板，来编译一个内核。
+
 ### 2.1 简单依据模板文件的制作过程：
-- tar  xf  linux-3.10.67.tar.xz  -C  /usr/src
-- cd  /usr/src
-- ln  -sv  linux-3.10.67  linux
-- cd  linux
-- cp  /boot/conofig-$(uname -r)  ./config
-- make menuconfig          配置内核选项
-- make  [-j \#]            编译内核，可使用-j指定编译线程数量
-- make modules_install    安装内核模块
-- make install            安装内核
-    - 安装 bzImage 为 /boot/vmlinuxz-VERSION-RELEASE
-    - 生成 initramfs 文件
-    - 编辑 grub 的配置文件
-- 重启系统，选择使用新内核；
+```
+#！/bin/bash
+
+# 1. 编译内核
+tar  xf  linux-3.10.67.tar.xz  -C  /usr/src
+cd  /usr/src
+ln  -sv  linux-3.10.67  linux
+cd  linux
+cp  /boot/conofig-$(uname -r)  ./config
+make menuconfig          配置内核选项
+make  [-j \#]            编译内核，可使用-j指定编译线程数量
+make modules_install    安装内核模块
+make install            安装内核
+
+# 2. 安装 bzImage 为 /boot/vmlinuxz-VERSION-RELEASE
+
+# 3. 生成 initramfs 文件
+
+# 4. 编辑 grub 的配置文件
+
+# 5. 重启系统，选择使用新内核
+```
 
 ### 2.2 screen命令：
 - 作用: 终端模拟器，允许在一个终端上打开多个屏幕
