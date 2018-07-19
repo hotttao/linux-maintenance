@@ -1,4 +1,4 @@
-# 6.2 bash 配置文件
+# 6.10 bash 配置文件
 bash 的配置文件也是 shell 脚本，用于定义环境变量，别名或运行一些特殊用途的脚本。比如一些特殊用途的别名，我们不想每次登陆 shell 后都重新设置，可以定义在配置文件中；又比如想将一些特定目录添加到 PATH 环境变量中等等。要理解 bash 的配置文件，我们首先需要明白 bash 的两种登陆类型，它们会分别读取不同的配置文件，所以本节的内容如下:
 1. bash 中的登陆类型
 2. bash 配置文件类型
@@ -43,11 +43,8 @@ bashrc:
 - 注意：仅管理员可修改全局配置文件；
 
 ## 3. 配置文件的生效过程
-**交互式登录shell进程**，配置文件的读取次序为
-`/etc/profile --> /etc/profile.d/* --> ~/.bash_profile --> ~/.bashrc --> /etc/bashrc`
-
-**非交互式登录shell进程**，配置文件的读取次序为
-`~/.bashrc --> /etc/bashrc --> /etc/profile.d/*`
+1. **交互式登录**: `/etc/profile --> /etc/profile.d/* --> ~/.bash_profile --> ~/.bashrc --> /etc/bashrc`
+2. **非交互式登录**: `~/.bashrc --> /etc/bashrc --> /etc/profile.d/*`
 
 需要注意的配置文件和命令行定义的配置具有不同的生效时间:
 - 对于命令行，例如变量和别名作用域为当前shell进程的生命周期；
