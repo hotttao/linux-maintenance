@@ -11,12 +11,13 @@ LVM 的物理结构如下图所示
 1. 每个物理设备首先被组织成 PV(Physical Volume)
 2. 多个 PV 合并组成 VG(Volume Group) 逻辑卷组，统一进行管理，VG 可以动态增加和删除 PV 以扩大或收缩容量
 3. PE(Physical Extent) 是 VG 容量分配的基本单元
-4. LV(Logical Volume) 包含特定数量的 PE，构成逻辑上的分区，可动态调整包含的PE 数，以达到动态调整分区容量的目录；包含在 LV 中的PE 称为 LE
+4. LV(Logical Volume) 包含特定数量的 PE，构成逻辑上的分区，可动态调整包含的PE 数，以达到动态调整分区容量的目的；包含在 LV 中的PE 称为 LE
 
 ![LVM](../images/9/LVM.png)
 
 #### LVM 创建过程
 因此逻辑卷的创建，首先需要将物理设备创建为 PV，将多个 PV 创建为 VG，然后在 VG 的基础上创建 LV，LV 即是可以用来创建文件系统并挂载使用的逻辑分区。整个过程即 `pv --> vg --> lv`。LVM 由内核模块 dm, device mapper(设备映射组件)提供。下面是 pv,vg,lv 一众命令的概览。
+
 |作用|PV|VG|LV|
 |:---|:---|:---|:---|
 |创建|pvcreate|vgcreate|lvcreate|
