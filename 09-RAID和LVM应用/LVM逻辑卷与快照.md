@@ -125,12 +125,28 @@ lv 的扩大或缩减不仅要调整 lv 自身大小，还需要调整 lv 上的
 ## 练习
 ```
 练习1：创建一个至少有两个PV组成的大小为20G的名为testvg的VG；要求PE大小为16MB, 而后在卷组中创建大小为5G的逻辑卷testlv；挂载至/users目录；
+> pvcreate /dev/sdb
+> pvcreate /dev/sdc
+> vgcreate -s 16M testvg /dev/sdb /dev/sdc
+> lvcreate -L 5G -n testlv testvg
+> mkfs -t ext4 /dev/testvg/testlv
+> mount /dev/testvg/testlv /users
 
 练习2： 新建用户archlinux，要求其家目录为/users/archlinux，而后su切换至archlinux用户，复制/etc/pam.d目录至自己的家目录；
+> useradd archlinux -d /users/archlinux
+> echo "aaaa"|password archlinux --stdin
+> cp -r /etc/pam /users/archlinux
 
 练习3：扩展testlv至7G，要求archlinux用户的文件不能丢失；
+> lvextend -L +20M /dev/testvg/testlv
+> resize2fs /dev/testvg/testlv
 
 练习4：收缩testlv至3G，要求archlinux用户的文件不能丢失；
+> umount /user
+> fsck -t ext4 -f /dev/testvg/testlv
+> resize2fs /dev/testvg/testlv 30M
+> lvreduce -L 30M /dev/testvg/testlv
+> mount /dev/testvg/testlv /user/archlinux
 
 练习5：对testlv创建快照，并尝试基于快照备份数据，验正快照的功能；
 ```
