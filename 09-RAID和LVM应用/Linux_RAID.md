@@ -24,8 +24,9 @@ RAID 中主要有三个关键概念和技术：镜像（ Mirroring ）、数据�
 RAID0 又称条带，将数据分片保存在多个不同的磁盘，以获取读写性能的提升。其组织结构如下图所示，我们以竖向排列的磁盘表示条带。
 
 <!-- ![RAID0](../images/9/RAID0.png) -->
-<img src="../images/9/RAID0.png" width="212" hegiht="348" align=left />
-<br>
+<p>
+<img src="../images/9/RAID0.png" alt="RAID0" width="212" hegiht="348" align=left />
+</p>
 
 
 ### 2.2 RAID1
@@ -38,8 +39,9 @@ RAID0 又称镜像，多个磁盘保存了数据的相同副本，通过冗余�
 RAID10 指的是，先将磁盘两两分组组成 RAID1,然后将 RAID1 组织成RAID0。其组织结构如下图所示，数据先分片，在冗余保存。
 
 <!-- ![RAID10](../images/9/RAID10.png =229*348) -->
-<img src="../images/9/RAID10.png" width="229" hegiht="348" align=left />
-<br>
+<p>
+<img src="../images/9/RAID10.png" alt="RAID10" width="229" hegiht="348" align=left />
+</p>
 
 ### 2.4 RAID4
 RAID4 指的是有一块专门作为校验的磁盘，剩余磁盘组织成 RAID0，由校验盘提供冗余容错能力。其组织结构如下图所示，Ap,Bp等 表示校验数据块。
