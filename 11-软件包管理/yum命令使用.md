@@ -1,5 +1,12 @@
-# 11.3 yum工具介绍
+# 11.3 yum命令使用
+yum 是 rpm 的前端工具，在 rpm 基础上能自动解决程序包的依赖问题，管理程序更加的方便。本节我们就来介绍 yum 的使用，包括以下内容:
+1. yum 的架构示意图
+2. yum 仓库指向定义
+3. yum 命令的使用
+4. yum 仓库管理
+
 ## 1. yum 概述
+![yum_server](../images/11/yum_serve.png)
 - CentOS: yum, dnf
 - URL: ftp://172.16.0.1/pub/    
 - YUM: yellow dog, Yellowdog Update Modifier
