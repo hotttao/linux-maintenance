@@ -1,4 +1,4 @@
-# 10.5 软件包管理rpm命令使用
+# 10.4 软件包管理rpm命令使用
 本节我们主要来讲解 rpm 命令的使用。rpm 可实现程序的安装、卸载和升级。但相比于程序的管理，rpm 的查询命令能帮助我们快速找到文件或二进制程序所属的程序包，及程序包的配置文件等信息，反而更加重要。由于程序之间存在依赖关系，而 rpm 不能自动帮我们解决程序的依赖问题，因此在程序的管理更加常用的命令是 rpm 的前端管理工具 yum。yum 能自动帮我们解决程序的依赖问题，我们会在下个章节介绍 yum 的使用。
 
 ## 1. CentOS rpm
@@ -82,19 +82,20 @@ rpm 提供了应用程序的安装、升级、卸载、查询、校验和数据�
 - `[verify-options]`
 
 ```
+> vim /usr/share/zsh/5.0.2/functions/tcp_open  # 修改了 zsh 包的部分文件
 > rpm -V zsh
+S.5....T.    /usr/share/zsh/5.0.2/functions/tcp_open
 
-
-- 检验结果:                
-    - S file Size differs
-    - M Mode differs (includes permissions and file type)
-    - 5 digest (formerly MD5 sum) differs
-    - D Device major/minor number mismatch
-    - L readLink(2) path mismatch
-    - U User ownership differs
-    - G Group ownership differs
-    - T mTime differs
-    - P caPabilities differ
+# 检验结果:                
+- S file Size differs
+- M Mode differs (includes permissions and file type)
+- 5 digest (formerly MD5 sum) differs
+- D Device major/minor number mismatch
+- L readLink(2) path mismatch
+- U User ownership differs
+- G Group ownership differs
+- T mTime differs
+- P caPabilities differ
 ```
 
 ## 2. 包来源合法性验正和完整性验正
