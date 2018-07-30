@@ -1,6 +1,6 @@
 # 12.2  ip地址分类与网络接口命名
-
-## 1. IP地址分类：
+## 1. IP地址分类
+通过上一节我们知道，IP 地址用于标识网络及网络中的主机，IPv4 由 32 位字节表示，那到底多少字节表示网络，多少字节表示网络中的主机呢？ 按照用于表示网络的字节数将 IP 地址分为 ABCDE 五大类:
 1. A类：
     - 第一段为网络号，后三段为主机号
     - 网络号：0 000 0000 - 0 111 1111：1-127
@@ -24,8 +24,8 @@
     - 私网地址: 192.168.0.0/24-192.168.255.0/24
 4. D类：组播
     - 网络号: 1110 0000 - 1110 1111：224-239
-E类：科研
-    - 240-255
+5. E类：科研
+    - 网络号: 1111 0000 - 1111 1111: 240-255
 
 
 ## 2. 网络配置方式
@@ -39,29 +39,29 @@ E类：科研
 
 ### 2.1 静态指定：
 1. ifcfg家族：
-    - ifconfig：配置IP，NETMASK
-    - route：路由
-    - netstat：状态及统计数据查看
+    - `ifconfig`：配置IP，NETMASK
+    - `route`：路由
+    - `netstat`：状态及统计数据查看
 2. iproute2家族：
-    - ip OBJECT：
+    - `ip OBJECT`：
         - addr：地址和掩码；
         - link：接口
         - route：路由
     - ss：状态及统计数据查看
 3. CentOS 7：nm(Network Manager)家族
-    - nmcli：命令行工具
-    - nmtui：text window 工具
+    - `nmcli`：命令行工具
+    - `nmtui`：text window 工具
 4. Centos6:
-    - system-config-network-tui
-    - setup          
+    - `system-config-network-tui`
+    - `setup`          
 5. 配置文件：
-    - RedHat及相关发行版:/etc/sysconfig/network-scripts/ifcfg-NETCARD_NAME
-    - system-config-netword-tui(setup)
+    - RedHat及相关发行版:`/etc/sysconfig/network-scripts/ifcfg-NETCARD_NAME`
+    - `system-config-netword-tui(setup)``
 4. 注意：
-    - DNS服务器指定: 配置文件：/etc/resolv.conf
+    - DNS服务器指定: 配置文件：`/etc/resolv.conf`
     - 本地主机名配置
-        - hostname, 配置文件：/etc/sysconfig/network
-        - CentOS 7：hostnamectl
+        - hostname, 配置文件：`/etc/sysconfig/network`
+        - CentOS 7：`hostnamectl`
 
 ### 2.2 动态分配：
 - 方式: 依赖于本地网络中有DHCP服务
