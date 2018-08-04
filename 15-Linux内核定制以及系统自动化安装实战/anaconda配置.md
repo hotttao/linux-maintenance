@@ -1,30 +1,4 @@
-# 15.2 Linux自动化安装anaconda配置定制
-## 1. Centos 系统安装
-### 1.1 安装程序：anaconda
-anaconda：
-- tui：基于cureses的文本配置窗口
-- gui：图形界面
-
-
-### 1.2 CentOS的安装过程启动流程：
-1. Stage1：MBR：boot.cat
-2. Stage2：isolinux/isolinux.bin
-    - 配置文件：isolinux/isolinux.cfg
-    - 每个对应的菜单选项：
-        - 加载内核：isolinux/vmlinuz
-        - 向内核传递参数：append  initrd=initrd.img .....
-3. 装载根文件系统，并启动anaconda
-    - 默认界面是图形界面：512MB+内存空间；
-    - 若需要显式指定启动TUI接口： 向启动内核传递一个参数"text"即可；
-        - 方法一： ESC, boot: linux  text
-        - 方法二： table, text
-4. 注意：上述内容一般位于引导设备，例如可通过光盘、U盘或网络等；后续的anacona及其安装用到的程序包等可以来自于程序包仓库，此仓库的位置可以为：
-    - 本地光盘
-    - 本地硬盘
-    - ftp server
-    - http server
-    - nfs server
-    - 如果想手动指定安装仓库：ESC,boot: linux method
+# 15.3 Centos 安装程序 anaconda 配置
 
 ### 1.2 anaconda的工作过程：
 1. 安装前配置阶段
