@@ -49,8 +49,8 @@ ls /media/cdrom/isolinux
 
 ```
 1. 加载并启动 BootLoader
-  - Stage1: 光盘的 MBR 是 `isolinux/boot.cat` 模拟出来的
-  - Stage2: 加载光盘的 BootLoader `isolinux/isolinux.bin`
+  - Stage1: 执行 `isolinux/boot.cat`，光盘的 MBR 包含的就是此文件
+  - Stage2: 执行 `isolinux/isolinux.bin` 提供提供安装界面和开机启动菜单
 3. BootLoader 引导和加载内核，并装载根文件系统
 3. 启动anaconda
     - 默认界面是图形界面：512MB+内存空间；
@@ -60,9 +60,9 @@ ls /media/cdrom/isolinux
     - 如果想手动指定安装仓库：ESC,boot: linux method
 
 #### isolinux.bin
-isolinux.bin 配置文件`isolinux/isolinux.cfg` 提供了开机菜单，每个菜单包含了启动内核的参数
+isolinux.bin 其配置文件位于 `isolinux/isolinux.cfg`，配置文件包含了开机启动菜单
 ```
-less /media/cdrom/isolinux/isolinux.cfg
+vim /media/cdrom/isolinux/isolinux.cfg
 
 ```
 
