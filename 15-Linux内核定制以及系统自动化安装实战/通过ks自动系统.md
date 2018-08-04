@@ -94,5 +94,32 @@ pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
 
 
 ## 2. 通过自制光盘使用网络仓库安装操作系统
-创建光盘镜像：
+### 2.1 创建磁盘映像文件
+```
+mount /dev/cdrom /media/cdrom/
+cd /media/cdrom/
+mkdir /root/myboot
+cp -r isolinux/ /root/myboot/
+cd /root/myboot/
+cp /root/ks.cfg .
+
+vim ks.cfg
+# 更改 kickstart 文件添加
+url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/ 配置选项
+
+vim isolinux/isolinux.cfg
+# 更改菜单
+label linux
+  menu label ^Install tao linux
+  kernel vmlinuz
+  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet ks=cdrom:/ks.cfg
+
+
+# 创建光盘镜像
+cd /root
 mkisofs -R -J -T -v --no-emul-boot --boot-load-size 4 --boot-info-table -V "CentOS 6 x86_64 boot" -c isolinux/boot.cat -b isolinux/isolinux.bin -o  /root/boot.iso   myboot/
+```
+
+### 1.2 修改 kickstart 文件
+
+

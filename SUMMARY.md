@@ -77,6 +77,7 @@
     * [15.1 Linux内核模块功能定制](15-Linux内核定制以及系统自动化安装实战/Linux内核模块功能定制.md)
     * [15.2 Centos安装过程](15-Linux内核定制以及系统自动化安装实战/Centos安装过程.md)
     * [15.3 anaconda配置](15-Linux内核定制以及系统自动化安装实战/anaconda配置.md)
+    * [15.4 通过ks自动系统](15-Linux内核定制以及系统自动化安装实战/通过ks自动系统.md)
 * [16. selinux及systemd](16-selinux及systemd/README.md)
     * [16.1 systemd及systemctl](16-selinux及systemd/systemd及systemctl实战.md)
     * [16.2 SELinux简介](16-selinux及systemd/SELinux简介.md)

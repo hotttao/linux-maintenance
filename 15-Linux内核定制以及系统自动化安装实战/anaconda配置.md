@@ -132,7 +132,7 @@ openssl  passwd  -1  -salt `openssl rand -hex 4`
     - 作用: 指明安装时使用的repository；
 - `url --url=http://172.16.0.1/cobbler/ks_mirror/CentOS-6.7-x86_64/`
     - 作用: 指明安装时使用的repository，但为url格式；
-
+    - `url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/`
 
 
 #### 创建 kickstart 文件的方式
@@ -146,3 +146,4 @@ system-config-kickstart
 # 检查语法错误：
 ksvalidator  /root/kickstart.cfg
 ```
+
