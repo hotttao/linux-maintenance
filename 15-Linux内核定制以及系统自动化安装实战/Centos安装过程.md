@@ -74,7 +74,7 @@ tree -L 1
 ```
 1. 加载并启动 BootLoader
     - Stage1: 执行 `isolinux/boot.cat`，光盘的 MBR 包含的就是此文件
-    - Stage2: 执行 `isolinux/isolinux.bin` 提供提供安装界面和开机启动菜单
+    - Stage2: 执行 `isolinux/isolinux.bin` 提供安装界面和开机启动菜单
 3. BootLoader 引导和加载内核，并装载根文件系统
     - 内核: `isolinux/vmlinuz`
     - 根文件系统: `isolinux/initrd.img`
@@ -90,10 +90,10 @@ isolinux.bin 其配置文件位于 `isolinux/isolinux.cfg`，配置文件中包�
 vim /media/cdrom/isolinux/isolinux.cfg
 ....
 label linux                       # 菜单标识
-  menu label ^Install CentOS 7    # 彩带名称
+  menu label ^Install CentOS 7    # 菜单名称
   kernel vmlinuz                  # 指定内核
                                   # 内核参数，通过 boot 命令行添加的参数会添加在此行后
-  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet 
+  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet
 
 label rescue
   menu indent count 5
@@ -152,6 +152,7 @@ boot 界面有如下选项可供使用:
 
 
 ## 4. 创建引导光盘
+我们可以创建自己的镜像文件，在镜像文件内创建好 kickstart 文件，并在菜单中配置好 ks 的位置，这样就可以直接进行安装。下面是配置过程
 ```
 > mkdir /tmp/myiso/isolinux
 > cp /media/cdrom/isolinux/* /tmp/myiso/isolinux

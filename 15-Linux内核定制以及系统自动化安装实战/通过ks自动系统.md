@@ -39,13 +39,19 @@ xconfig  --startxonboot
 # System bootloader configuration
 bootloader --append=" crashkernel=auto" --location=mbr --boot-drive=sda
 
+
 # Partition clearing information
-clearpart --none --initlabel
-part /boot  --fstype=ext4  --size=500
-part  pv.008002  --size=20480
-volgroup  cl  --pesize=4096  pv.008002
-logvol  /  --fstype=xfs  --name=cl-root  --vgname=cl  --size=15360
-logvol  /home  --fstype=xfs  --name=cl-home  --vgname=cl  --size=5120
+clearpart --initlabel --list=nvme0n1p11,nvme0n1p10,nvme0n1p8
+# Disk partitioning information
+part /boot/efi --fstype="efi" --ondisk=nvme0n1 --size=1028 --fsoptions="umask=0077,shortname=winnt"
+part pv.1133 --fstype="lvmpv" --ondisk=nvme0n1 --size=153604
+part /boot --fstype="xfs" --ondisk=nvme0n1 --size=1021
+volgroup cl --pesize=4096 pv.1133
+logvol /home  --fstype="xfs" --size=25600 --name=home --vgname=cl
+logvol /var  --fstype="xfs" --size=46080 --name=var --vgname=cl
+logvol swap  --fstype="swap" --size=2048 --name=swap --vgname=cl
+logvol /  --fstype="xfs" --size=25600 --name=root --vgname=cl
+logvol /usr  --fstype="xfs" --size=51200 --name=usr --vgname=cl
 
 %packages
 @^developer-workstation-environment
@@ -91,7 +97,10 @@ pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
 ```
 
 ### 1.3 创建虚拟机并启动安装
-
+进入安装的 boot 界面输入
+```
+boot  linux  text ip=192.168.1.115 netmask=255.255.255.0 ks=http:/192.168.1.110/ks.cfg
+```
 
 ## 2. 通过自制光盘使用网络仓库安装操作系统
 ### 2.1 创建磁盘映像文件
@@ -105,7 +114,7 @@ cp /root/ks.cfg .
 
 vim ks.cfg
 # 更改 kickstart 文件添加
-url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/ 配置选项
+url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/
 
 vim isolinux/isolinux.cfg
 # 更改菜单
@@ -121,5 +130,10 @@ mkisofs -R -J -T -v --no-emul-boot --boot-load-size 4 --boot-info-table -V "Cent
 ```
 
 ### 1.2 修改 kickstart 文件
+ks 文件与上面的配置类似，但是需要使用 url 命令指定外部仓库的位置
+
+`url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/ `
 
 
+### 1.3 创建虚拟机并启动安装
+创建虚拟机后，选择配置的菜单，启动自动安装过程
