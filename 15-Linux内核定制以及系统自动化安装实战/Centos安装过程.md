@@ -19,8 +19,21 @@
 ### 1.2 安装光盘的结构
 ```
 mount -r /dev/cdrom /media/cdrom
-tree /media/cdrom
-
+cd /media/cdrom
+tree -L 1
+.
+├── CentOS_BuildTag
+├── EFI
+├── EULA
+├── GPL
+├── images
+├── isolinux           # 内核所在目录
+├── LiveOS
+├── Packages
+├── repodata
+├── RPM-GPG-KEY-CentOS-7
+├── RPM-GPG-KEY-CentOS-Testing-7
+└── TRANS.TBL
 ```
 我们安装光盘的目录结构如上所示，isolinux 就是光盘上操作系统内核所在的目录，其余部分是程序包仓库。
 
@@ -45,8 +58,20 @@ anaconda 提供的安装界面分为:
 ### 1.2 CentOS的安装过程启动流程
 当前我们就以光盘安装来讲解 Centos 的安装过程
 ```
-ls /media/cdrom/isolinux
-
+cd /media/cdrom/isolinux
+tree -L 1
+.
+├── boot.cat      # MBR 中的 bootLoader
+├── boot.msg
+├── grub.conf
+├── initrd.img
+├── isolinux.bin  # 提供安装界面
+├── isolinux.cfg  # 配置文件，包含开机菜单
+├── memtest
+├── splash.png
+├── TRANS.TBL
+├── vesamenu.c32
+└── vmlinuz
 ```
 1. 加载并启动 BootLoader
   - Stage1: 执行 `isolinux/boot.cat`，光盘的 MBR 包含的就是此文件
@@ -55,17 +80,40 @@ ls /media/cdrom/isolinux
 3. 启动anaconda
     - 默认界面是图形界面：512MB+内存空间；
     - 若需要显式指定启动TUI接口： 向启动内核传递一个参数"text"即可；
-        - 方法一： `ESC, boot: linux text`
-        - 方法二： `table, text`
-    - 如果想手动指定安装仓库：ESC,boot: linux method
+    - 如果想手动指定安装仓库，也可以通过向内核传递参数更改
 
 #### isolinux.bin
-isolinux.bin 其配置文件位于 `isolinux/isolinux.cfg`，配置文件包含了开机启动菜单
+isolinux.bin 其配置文件位于 `isolinux/isolinux.cfg`，配置文件中包含了开机启动菜单
+
 ```
 vim /media/cdrom/isolinux/isolinux.cfg
+....
+label linux                       # 菜单标识
+  menu label ^Install CentOS 7    # 彩带名称
+  kernel vmlinuz                  # 指定内核
+                                  # 内核参数，通过 boot 命令行添加的参数会添加在此行后
+  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet 
 
+label rescue
+  menu indent count 5
+  menu label ^Rescue a CentOS system
+  text help
+  If the system will not boot, this lets you access files
+  and edit config files to try to get it booting again.
+  endtext
+  kernel vmlinuz
+  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 rescue quiet
 ```
 
-- 每个对应的菜单选项：
-    - 加载内核：isolinux/vmlinuz
-    - 向内核传递参数：append  initrd=initrd.img .....
+#### 向内核传递参数
+安装启动时，我们可以通过向内核传递参数，来更改 anacoda 的启动方式，那么如何向内核参数传递参数呢？
+
+首先进入安装界面，这个安装界面就是 `isolinux/isolinux.bin` 提供的，上面的选项就是  `isolinux/isolinux.cfg` 配置文件的内容
+
+![start](../images/15/start.jpg)
+
+然后按 `ESC` 即进入 boot 命令行界面，输入`菜单标识 参数`即可以向内核传递参数。传递的参数将附加在, isolinux.cfg 对应菜单的 append 行 后面。boot 中添加如下参数(此处 linux 表示  isolinux.cfg 中的一个菜单标识)
+- `linux text`: 指定 anaconda 以tui 方式启动
+- `linux method`: 手动指定程序包源
+
+![start](../images/15/boot.jpg)
