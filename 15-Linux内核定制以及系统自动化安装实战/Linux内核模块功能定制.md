@@ -13,7 +13,7 @@
 ### 1.1 准备开发环境
 开发环境主要是准备编译环境，Centos6-7 中安装如下两个包组即可:
 1. `Development Tools`: 中文下叫"开发工具"
-2. `Server Platform Development`: 中文下叫 "服务器平台开发"
+2. `Server Platform Development`: 中文下叫 "服务器平台开发" - Centos7 可能没有此包组
 
 ### 1.2 获取目标主机上硬件设备的相关信息
 Linux 中有如下命令，可以帮助我们获取硬件设备的相关信息包括:
@@ -64,22 +64,22 @@ ll arch/x86_64/boot/bzImage
 - 作用: 终端模拟器，允许在一个终端上打开多个屏幕
 - 特性: screen 的模拟终端不会因为当前物理终端断开连接而丢失，即 screen 内运行的程序不会因为物理终端断开连接而终止
 - 选项:
-    - 打开screen：  screen
-    - 拆除screen：  Ctrl+a, d
-    - 列出screen：  screen  -ls
-    - 连接至screen：screen  -r  SCREEN_ID
-    - 关闭screen:  exit
+    - 打开screen：  `screen`
+    - 拆除screen：  `Ctrl+a, d`
+    - 列出screen：  `screen  -ls`
+    - 连接至screen：`screen  -r  SCREEN_ID`
+    - 关闭screen:  `exit`
 
 ### 2.3 编译过程的详细说明：
 1. 配置内核选项
     - 支持“更新”模式进行配置：在已有的.config文件的基础之上进行“修改”配置；
-        - make config：基于命令行以遍历的方式去配置内核中可配置的每个选项；
-        - make menuconfig：基于cureses的文本配置窗口；需要额外安装 `ncurses-devel` 包
-        - make gconfig：基于GTK开发环境的窗口界面；  包组“桌面平台开发”
-        - make xonfig：基于QT开发环境的窗口界面；
+        - `make config`：基于命令行以遍历的方式去配置内核中可配置的每个选项；
+        - `make menuconfig`：基于cureses的文本配置窗口；需要额外安装 `ncurses-devel` 包
+        - `make gconfig`：基于GTK开发环境的窗口界面；  包组“桌面平台开发”
+        - `make xonfig`：基于QT开发环境的窗口界面；
     - 支持“全新配置”模式进行配置：
-        - make  defconfig：基于内核为目标平台提供的“默认”配置为模板进行配置；
-        - make  allnoconfig：所有选项均为“no”；
+        - `make  defconfig`：基于内核为目标平台提供的“默认”配置为模板进行配置；
+        - `make  allnoconfig`：所有选项均为“no”；
 2. 编译
     - 多线程编译：`make  [-j #]`
     - 编译内核中的一部分代码：
