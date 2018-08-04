@@ -1,6 +1,7 @@
 # 15.3 Centos 安装程序 anaconda 配置
+上一节我们讲解了 Centos 的安装启动过程，下面我们来说一下，anaconda 启动后会进行哪些操作，以及如何配置 anaconda。
 
-### 1.2 anaconda的工作过程：
+## 1. anaconda的工作过程
 1. 安装前配置阶段
     - 安装过程使用的语言；
     - 键盘类型
@@ -23,122 +24,125 @@
     - selinux
     - core dump
 
-### 1.3 anaconda的配置方式：
+## 2. anaconda的配置方式
 1. 交互式配置方式；
-2. 支持通过读取配置文件中事先定义好的配置项自动完成配置；遵循特定的语法格式，此文件即为kickstart文件；
+2. 支持通过读取配置文件中，事先定义好的配置项，自动完成配置；遵循特定的语法格式，此文件即为kickstart文件；
 
-#### kickstart 文件格式
-交互式配置安装完成后，在 root 目录下会生成此次安装的 kickstart 文件 - /root/anaconda-ks.cfg
-1. 命令段：
-    - 指定各种安装前配置选项，如键盘类型等；
-        - 必备命令
-        - 可选命令
-2. 程序包段：
-    - 指明要安装程序包，以及包组，也包括不安装的程序包；
-        - %packages: 开始标记
-        - @group_name: 包组
-        - package: 单个包
-        - -package: 不要安装的单个程序包
-        - %end: 结束标记
+## 3. kickstart 文件格式
+交互式配置安装完成后，在 root 目录下会生成此次安装的 kickstart 文件 `/root/anaconda-ks.cfg`。kickstart 文件由三个部分组成
+```
+# 1. 命令段
+#version=DEVEL
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use CDROM installation media
+cdrom
+# Use graphical install
+graphical
+......
+
+# 2. 程序包段
+%packages    # 开始标记
+@group_name  # 要安装的包组
+package      # 要安装的单个包
+-package     # 不要安装的单个程序包
+%end         # 结束标记
+
+# 3. 脚本段
+
+```
+1. 命令段：指定各种安装前配置选项，如键盘类型等；有一些是必备命令，有一些则是可选命令
+2. 程序包段：指明要安装程序包，以及包组，也包括不安装的程序包；
 3. 脚本段：
-    - %pre：安装前脚本，运行环境：运行安装介质上的微型Linux系统环境；
-    - %post：安装后脚本，运行环境：安装完成的系统；
+    - `%pre`：安装前脚本，运行环境：运行安装介质上的微型Linux系统环境；
+    - `%post`：安装后脚本，运行环境：安装完成的系统；
 
+### 3.1 命令段
+参考官方文档：《Installation Guide》
 
-**命令段中的必备命令**：
-- authconfig：认证方式配置
-    - authconfig  --enableshadow  --passalgo=sha512
-- bootloader：定义bootloader的安装位置及相关配置
-    - bootloader  --location=mbr  --driveorder=sda  --append="crashkernel=auto rhgb quiet"
-- keyboard：设置键盘类型
-    - keyboard us
-- lang：语言类型
-    - lang  zh_CN.UTF-8
-- part：分区布局；
-    - part  /boot  --fstype=ext4  --size=500
-    - part  pv.008002  --size=51200
-- rootpw：管理员密码
-    - rootpw  --iscrypted  \$6\$4Yh15kMGDWOPtbbW$SGax4DsZwDAz4201.O97WvaqVJfHcISsSQEokZH054juNnoBmO/rmmA7H8ZsD08.fM.Z3Br/67Uffod1ZbE0s.
-- timezone：时区
-    - timezone  Asia/Shanghai
-- 补充：分区相关的其它指令
-    - clearpart：清除分区
-        - clearpart  --none  --drives=sda：清空磁盘分区；
-    - volgroup：创建卷组
-        - volgroup  myvg  --pesize=4096  pv.008002
-    - logvol：创建逻辑卷
-        - logvol  /home  --fstype=ext4  --name=lv_home  --vgname=myvg  --size=5120
-- 生成加密密码的方式：
-    - openssl  passwd  -1  -salt `openssl rand -hex 4`
+```bash
+#version=DEVEL
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use CDROM installation media
+cdrom
+# Use graphical install
+graphical
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda
+# Keyboard layouts
+keyboard --vckeymap=cn --xlayouts='cn'
+# System language
+lang zh_CN.UTF-8
 
-**可选命令**：
-- install  OR  upgrade：安装或升级；
-- text：安装界面类型，text为tui，默认为GUI
-- network：配置网络接口
-    - network  --onboot yes  --device eth0  --bootproto dhcp  --noipv6
-- firewall：防火墙
-    - firewall  --disabled
-- selinux：SELinux
-    - selinux --disabled
-- halt、poweroff或reboot：安装完成之后的行为；
-    - repo：指明安装时使用的repository；
-        - repo  --name="CentOS"  --baseurl=cdrom:sr0  --cost=100
-    - url： 指明安装时使用的repository，但为url格式；
-        - url --url=http://172.16.0.1/cobbler/ks_mirror/CentOS-6.7-x86_64/    
-- 参考官方文档：《Installation Guide》
+# Network information
+network  --bootproto=dhcp --device=ens33 --onboot=off --ipv6=auto --no-activate
+network  --hostname=localhost.localdomain
+
+# Root password
+rootpw --iscrypted $6$ji4or39qLiMVBwAi$E9N78iOYlZw9zzD3g3CGgVvb7MSUgLbsjq9WiwIu6qSGV.y8Sbmx8WtvrWyAPnKkHhdxJKhUAZqXl2zrzjp3t0
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Asia/Shanghai --isUtc
+user --groups=wheel --name=tao --password=$6$u/SLeiTrWJUgp.8E$fGCp/IAm01lyGVBkcYMTrutmAFDjdEblCorhX5Kv.cgCZvVpn8PB4LoQ/6.Qn1Tlvq0YqwhzivNqqCSeGpgc5/ --iscrypted --gecos="tao"
+# X Window System configuration information
+xconfig  --startxonboot
+# System bootloader configuration
+bootloader --append=" crashkernel=auto" --location=mbr --boot-drive=sda
+autopart --type=lvm
+# Partition clearing information
+clearpart --none --initlabel
+```
+
+#### 必备命令
+- `authconfig  --enableshadow  --passalgo=sha512`:认证方式配置
+- `bootloader  --location=mbr  --driveorder=sda  --append="crashkernel=auto rhgb quiet"`
+    - 作用: 定义bootloader的安装位置及相关配置
+    - `--append`: 添加到内核的参数
+- `keyboard us`: 设置键盘类型
+- `lang  zh_CN.UTF-8`: 语言类型
+- `part`: 创建磁盘分区 
+    - `clearpart  --none  --drives=sda`：清空磁盘分区
+    - `part /boot  --fstype=ext4  --size=500`: 定义基本磁盘分区
+    - `part  pv.008002  --size=51200`: 创建逻辑卷的物理卷，008002 为物理卷的标识
+    - `volgroup  myvg  --pesize=4096  pv.008002`: 创建逻辑卷组
+    - `logvol  /home  --fstype=ext4  --name=lv_home  --vgname=myvg  --size=5120`: 创建逻辑卷
+- `rootpw  --iscrypted  passwd`: 管理员密码
+- `timezone  Asia/Shanghai`: 时区
+
+```
+# 生成加密密码的方式(root 密码)
+openssl  passwd  -1  -salt `openssl rand -hex 4`
+```
+
+#### 可选命令
+- `install|upgrade`：安装或升级；
+- `text|graphical`：安装界面类型，text为tui，默认为GUI
+- `network  --onboot yes  --device eth0  --bootproto dhcp  --noipv6`
+    - 作用: 配置网络接口
+    - `--onboot yes`: ifcfg 中的 ON_BOOT 参数，其他参数类似
+- `firewall`: 防火墙设置
+    - `firewall  --disabled`: 关闭防火墙
+    - `firewall --service ssh`: 启动防火墙，放行 ssh 服务
+- `selinux --disabled`: 关闭 selinux
+- `halt|poweroff|reboot`：安装完成之后的行为；
+- `repo  --name="CentOS"  --baseurl=cdrom:sr0  --cost=100`
+    - 作用: 指明安装时使用的repository；
+- `url --url=http://172.16.0.1/cobbler/ks_mirror/CentOS-6.7-x86_64/`
+    - 作用: 指明安装时使用的repository，但为url格式；
+
 
 
 #### 创建 kickstart 文件的方式
 1. 直接手动编辑，或依据模板修改
-2. 可使用创建工具 system-config-kickstart
-    - 仅限 Centos 6
-    - 也可依据模板修改并生成新配置
+2. 可使用创建工具 system-config-kickstart，可依据模板修改并生成新配置
+
 ```
 yum install  system-config-kickstart
 system-config-kickstart
 
 # 检查语法错误：
 ksvalidator  /root/kickstart.cfg
-```
-
-### 1.4 安装引导选项：
-boot:
-1. text：文本安装方式
-2. method：手动指定使用的安装方法
-3. 与网络相关的引导选项：
-    - ip=IPADDR
-    - netmask=MASK
-    - gateway=GW
-    - dns=DNS_SERVER_IP
-    - ifname=NAME:MAC_ADDR -- 指定上述设置应用在哪个网卡上
-3. 远程访问功能相关的引导选项：
-    - vnc
-    - vncpassword='PASSWORD'
-4. 启动紧急救援模式：
-    - rescue
-5. 装载额外驱动：
-    - dd
-6. 指定 kickstart 文件的位置
-    - ks=
-        - DVD drive: ks=cdrom:/PATH/TO/KICKSTART_FILE
-        - Hard Drive： ks=hd:/DEVICE/PATH/TO/KICKSTART_FILE
-        - HTTP Server： ks=http://HOST[:PORT]/PATH/TO/KICKSTART_FILE
-        - FTP Server:  ks=ftp://HOST[:PORT]/PATH/TO/KICKSTART_FILE
-        - HTTPS Server:  ks=https://HOST[:PORT]/PATH/TO/KICKSTART_FILE
-7. 安装选项文档: www.redhat.com/docs , 《installation guide》        
-
-
-### 1.5 创建引导光盘
-```
-> mkdir /tmp/myiso/isolinux
-> cp /media/cdrom/isolinux/* /tmp/myiso/isolinux
-> cp /root/kickstart.cfg /tmp/myiso/isoLinux
-> mkisofs -R -J -T -v --no-emul-boot --boot-load-size 4 --boot-info-table -V "CentOS 6 x86_64 boot" -c isolinux/boot.cat -b isolinux/isolinux.bin -o  /root/boot.iso  myiso/
-
-## 配置 isolinux/isolinux.cfg 添加安装项，直接配置 ks 参数
-label linux ks
-  menu
-  menu
-  kernal vmlinuz
-  appeed initrd=initrd.img  ks=cdrom:/kickstart.cfg
 ```

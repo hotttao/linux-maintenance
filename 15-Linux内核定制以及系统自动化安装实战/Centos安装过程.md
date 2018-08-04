@@ -1,8 +1,7 @@
 # 15.2 Centos安装过程
 本节我们来讲解 Centos 系统的安装过程。
 
-## 1. Centos 系统安装
-### 1.1 安装程序：anaconda
+## 1. 安装程序：anaconda
 前面我们说过操作系统的层次，如下图所示，因为直接面向硬件编程是一件非常困难的是，所以才有了操作系统。如果有安装过 Centos 系统就会知道，安装过程有一个操作界面供我们进行选择安装，显然这是一个应用程序，那么这个应用程序是直接在硬件之上编写的么？我们说过在硬件之上编写应用程序是极其困难的，且不易移植，所以我们的安装程序也是构建在内核之上，只不过这个内核不是来自我们的计算机，而是我们的安装光盘或U盘上。Centos 的安装程序就是 annaconda。
 ```
 --------------
@@ -16,7 +15,7 @@
 -------------------------------
 ```
 
-### 1.2 安装光盘的结构
+## 2. 安装光盘的结构
 ```
 mount -r /dev/cdrom /media/cdrom
 cd /media/cdrom
@@ -55,7 +54,7 @@ anaconda 提供的安装界面分为:
 - gui：图形界面
 
 
-### 1.2 CentOS的安装过程启动流程
+## 3. CentOS的安装过程启动流程
 当前我们就以光盘安装来讲解 Centos 的安装过程
 ```
 cd /media/cdrom/isolinux
@@ -74,15 +73,17 @@ tree -L 1
 └── vmlinuz
 ```
 1. 加载并启动 BootLoader
-  - Stage1: 执行 `isolinux/boot.cat`，光盘的 MBR 包含的就是此文件
-  - Stage2: 执行 `isolinux/isolinux.bin` 提供提供安装界面和开机启动菜单
+    - Stage1: 执行 `isolinux/boot.cat`，光盘的 MBR 包含的就是此文件
+    - Stage2: 执行 `isolinux/isolinux.bin` 提供提供安装界面和开机启动菜单
 3. BootLoader 引导和加载内核，并装载根文件系统
+    - 内核: `isolinux/vmlinuz`
+    - 根文件系统: `isolinux/initrd.img`
 3. 启动anaconda
     - 默认界面是图形界面：512MB+内存空间；
     - 若需要显式指定启动TUI接口： 向启动内核传递一个参数"text"即可；
     - 如果想手动指定安装仓库，也可以通过向内核传递参数更改
 
-#### isolinux.bin
+### 3.1 isolinux.bin
 isolinux.bin 其配置文件位于 `isolinux/isolinux.cfg`，配置文件中包含了开机启动菜单
 
 ```
@@ -105,15 +106,62 @@ label rescue
   append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 rescue quiet
 ```
 
-#### 向内核传递参数
+### 3.2 向内核传递参数
 安装启动时，我们可以通过向内核传递参数，来更改 anacoda 的启动方式，那么如何向内核参数传递参数呢？
 
 首先进入安装界面，这个安装界面就是 `isolinux/isolinux.bin` 提供的，上面的选项就是  `isolinux/isolinux.cfg` 配置文件的内容
 
 ![start](../images/15/start.jpg)
 
-然后按 `ESC` 即进入 boot 命令行界面，输入`菜单标识 参数`即可以向内核传递参数。传递的参数将附加在, isolinux.cfg 对应菜单的 append 行 后面。boot 中添加如下参数(此处 linux 表示  isolinux.cfg 中的一个菜单标识)
+然后按 `ESC` 即进入 boot 命令行界面，输入`菜单标识 参数`即可以向对应菜单的内核传递参数。传递的参数将附加在, isolinux.cfg 对应菜单的 append 行后面。例如通过 boot 界面控制 anaconda 的启动方式:
 - `linux text`: 指定 anaconda 以tui 方式启动
 - `linux method`: 手动指定程序包源
+- 说明: 此处 linux 表示  isolinux.cfg 中的一个菜单标识
 
-![start](../images/15/boot.jpg)
+![boot](../images/15/boot.JPG)
+
+也可以在特定的菜单名称上按 TAB 键，就可以编辑特定菜单的参数
+
+![boot](../images/15/menu.JPG)
+
+### 3.3 boot 界面的安装引导选项
+boot 界面有如下选项可供使用:
+1. text：文本安装方式
+2. method：手动指定使用的安装方法
+3. 与网络相关的引导选项：
+    - `ip=IPADDR`
+    - `netmask=MASK`
+    - `gateway=GW`
+    - `dns=DNS_SERVER_IP`
+    - `ifname=NAME:MAC_ADDR` -- 指定上述设置应用在哪个网卡上
+3. 远程访问功能相关的引导选项：
+    - `vnc`
+    - `vncpassword='PASSWORD'`
+4. 启动紧急救援模式：
+    - `rescue`
+5. 装载额外驱动：
+    - `dd`
+6. 指定 kickstart 文件的位置
+    - ks=
+        - DVD drive: `ks=cdrom:/PATH/TO/KICKSTART_FILE`
+        - Hard Drive： `ks=hd:/DEVICE/PATH/TO/KICKSTART_FILE`
+        - HTTP Server： `ks=http://HOST[:PORT]/PATH/TO/KICKSTART_FILE`
+        - FTP Server:  `ks=ftp://HOST[:PORT]/PATH/TO/KICKSTART_FILE`
+        - HTTPS Server:  `ks=https://HOST[:PORT]/PATH/TO/KICKSTART_FILE`
+7. 安装选项文档: www.redhat.com/docs , 《installation guide》        
+
+
+## 4. 创建引导光盘
+```
+> mkdir /tmp/myiso/isolinux
+> cp /media/cdrom/isolinux/* /tmp/myiso/isolinux
+> cp /root/kickstart.cfg /tmp/myiso/isoLinux
+> mkisofs -R -J -T -v --no-emul-boot --boot-load-size 4 --boot-info-table -V "CentOS 6 x86_64 boot" -c isolinux/boot.cat -b isolinux/isolinux.bin -o  /root/boot.iso  myiso/
+
+## 配置 isolinux/isolinux.cfg 添加安装项，直接配置 ks 参数
+label linux ks
+  menu
+  menu
+  kernal vmlinuz
+  appeed initrd=initrd.img  ks=cdrom:/kickstart.cfg
+```
