@@ -15,17 +15,51 @@ Linux传统权限模型下，进程能够访问的哪些资源，取决于进程
         - TE (Type Enforcement)：最小权限法则
     - 进程权限: 取决于SELinux 规则库
 
-SELinux:
-- 级别: SELinux 有两种工作级别，不同工作级别下，进程受到的控制并不相同
-    - strict： 每个进程都收到 selinux 的控制
-    - targeted: 仅有限个进程受到 selinux 的控制，只监控容易被入侵的进程
-- 状态: SELinux 根据启用与否有三个状态
+SELinux 有两种工作级别，不同工作级别下，受控级别的范围不同:
+- strict： 每个进程都收到 selinux 的控制
+- targeted: 仅有限个进程受到 selinux 的控制，只监控容易被入侵的进程
+
+之所以有 targeted 级别，主要还是受限于管理所有进程能够访问资源的成本太高
+
+
+### 1.1 SELinux 配置文件
+SELinux 的配置位于 `/etc/sysconfig/selinux`
+```
+```
+
+状态: SELinux 根据启用与否有三个状态
     - disabled: 禁用，关闭 SELinux
     - enforcing: 启用，强制，一旦进程不符合 SELinux 的权限控制会禁止进程访问相关资源
     - permissive: 启用，警告，SELinux 不会禁止进程违规访问资源，仅记录日志
 
 
 ## 2. SELinux 工作模型
+进程的执行过程可以概括成 `subject operation object`
+- subject: 进程主体
+- object: 系统资源 执行了什么操作，资源主要是文件
+- operation: 进程对资源能够执行的操作
+
+即 SELinux 的核心就是确定"进程能够对哪些资源执行什么操作"。
+
+为了将进程与资源关联起来，SELinux 将
+1. 进程标记为 domian(域) 表示一个空间
+2. 将资源标记为 type(类型)
+3. domian 包含的 type 即进程能够操作的资源范文，domian 与 type 的对应关系记录在 SELinux 的规则库中
+
+
+### 2.1 进程的域
+```
+ps auxZ
+
+```
+
+
+### 2.2 文件的类型
+```
+ll -Z .
+
+```
+
 1. SELinux 为每个文件提供安全标签，也为每个进程提供安全标签
 2. 安全标签: user:role:type
     - user: SELinux 的 user
