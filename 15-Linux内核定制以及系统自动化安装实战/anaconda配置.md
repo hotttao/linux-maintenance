@@ -2,7 +2,8 @@
 上一节我们讲解了 Centos 的安装启动过程，下面我们来说一下，anaconda 启动后会进行哪些操作，以及如何配置 anaconda。
 
 ## 1. anaconda的工作过程
-1. 安装前配置阶段
+anaconda 在进行操作系统安装时会经由如下几个步骤:
+1. 安装前配置阶段，包括设置如下参数
     - 安装过程使用的语言；
     - 键盘类型
     - 安装目标存储设备
@@ -25,11 +26,27 @@
     - core dump
 
 ## 2. anaconda的配置方式
-1. 交互式配置方式；
-2. 支持通过读取配置文件中，事先定义好的配置项，自动完成配置；遵循特定的语法格式，此文件即为kickstart文件；
+安装前配置阶段，有两种配置方式
+1. 交互式配置方式；利用 anaconda 提供的安装界面，逐项进行选择配置
+2. 通过读取配置文件中，事先定义好的配置项，自动完成配置；此文件即为kickstart文件；交互式配置安装完成后，在 root 目录下会生成此次安装的 kickstart 文件 `/root/anaconda-ks.cfg`
+
+kickstart 文件有特定的语法格式
+1. 可以直接手动编辑，或依据模板修改
+2. 也可以使用创建工具 `system-config-kickstart`，此命令会提供给我们一个交互界面，类似模拟 anaconda 的安装界面。我们可以打开 root 目录下生成的  kickstart 文件作为模板来生成我们的kickstart 文件。`system-config-kickstart` 安装与使用界面如所示
+
+```
+yum install  system-config-kickstart
+system-config-kickstart
+
+# ksvalidator 命令可用于检查 ks 文件是否有语法错误
+ksvalidator  /root/kickstart.cfg
+```
+![ks_start](../images/15/system_kickstart.png)
+
+
 
 ## 3. kickstart 文件格式
-交互式配置安装完成后，在 root 目录下会生成此次安装的 kickstart 文件 `/root/anaconda-ks.cfg`。kickstart 文件由三个部分组成
+大体上，kickstart 文件由三个部分组成
 ```
 # 1. 命令段
 #version=DEVEL
@@ -58,7 +75,7 @@ package      # 要安装的单个包
     - `%post`：安装后脚本，运行环境：安装完成的系统；
 
 ### 3.1 命令段
-参考官方文档：《Installation Guide》
+kickstart 可用命令很多，想深入了解，可以参考官方文档：《Installation Guide》。下面是我安装 Centos7 之后生成的 ks 文件。我们只会介绍最常用的命令的。
 
 ```bash
 #version=DEVEL
@@ -103,7 +120,7 @@ clearpart --none --initlabel
     - `--append`: 添加到内核的参数
 - `keyboard us`: 设置键盘类型
 - `lang  zh_CN.UTF-8`: 语言类型
-- `part`: 创建磁盘分区 
+- `part`: 创建磁盘分区
     - `clearpart  --none  --drives=sda`：清空磁盘分区
     - `part /boot  --fstype=ext4  --size=500`: 定义基本磁盘分区
     - `part  pv.008002  --size=51200`: 创建逻辑卷的物理卷，008002 为物理卷的标识
@@ -133,17 +150,3 @@ openssl  passwd  -1  -salt `openssl rand -hex 4`
 - `url --url=http://172.16.0.1/cobbler/ks_mirror/CentOS-6.7-x86_64/`
     - 作用: 指明安装时使用的repository，但为url格式；
     - `url --url=https://mirrors.aliyun.com/centos/7/os/x86_64/`
-
-
-#### 创建 kickstart 文件的方式
-1. 直接手动编辑，或依据模板修改
-2. 可使用创建工具 system-config-kickstart，可依据模板修改并生成新配置
-
-```
-yum install  system-config-kickstart
-system-config-kickstart
-
-# 检查语法错误：
-ksvalidator  /root/kickstart.cfg
-```
-
