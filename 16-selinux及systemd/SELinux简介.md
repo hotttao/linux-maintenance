@@ -1,25 +1,31 @@
 # 16.2 SELinux简介
-## 1. SELinux
-SELinux: Security Enhanced Linux
-### 1.1 Linux 权限模型
+对于安全性很多人存在误解，觉得 Linux 比 windows 更加安全，其实不然。SELinux(Security-Enhanced Linux) 是美国国家安全局（NSA）对于强制访问控制的实现，用于增强 Linux 的安全性。SELinux 在实际生产环境中使用的很少，原因并不是 SELinux 不够好，而是想要做到精准的权限控制，需要明确知道并管理进程需要访问的资源，对这些信息的管理本身有很大负担。所以本节我们只介绍 SELinux 的简单原理和管理，并不会对其做深入介绍。具体内容包括:
+1. SELinux 的权限模型
+2. SELinux 工作模型
+3. SELinux 管理
+
+## 1. SELinux 权限模型
+Linux传统权限模型下，进程能够访问的哪些资源，取决于进程的发启者能够访问的资源集合。这样存在一些弊端，资源所需访问的资源很少，但是能够访问的资源却很大，一旦进程被不怀好意的人控制，就会对 Linux 安全造成威胁。因此 SELinux 才用最小权限法则，进程只能访问那些它必需访问控制的资源，这样就可以提高 Linux 的安全性。两种权限模型的对比如下:
 1. Linux传统权限模型
-    - 属主、属组、其它
-    - DAC (Discretionary Access Control)： 自主访问控制
+    - 权限模型: DAC (Discretionary Access Control) 自主访问控制
+    - 进程权限: 取决于进程发起者作为属主、属组、其它用户的权限集和
 2. SELinux:
-    - MAC (Mandatory Access Control)
-    - TE (Type Enforcement)：最小权限法则
-    - 两种工作级别:
-        - strict： 每个进程都收到 selinux 的控制
-        - targeted: 仅有限个进程受到 selinux 的控制，只监控容易被入侵的进程
+    - 权限模型:
+        - MAC (Mandatory Access Control): 强制访问控制
+        - TE (Type Enforcement)：最小权限法则
+    - 进程权限: 取决于SELinux 规则库
 
-### 1.2 SELinux
-#### 1.2.1 SELinux 状态
-getenforce 命令
-    - disabled: 禁用
-    - permissive: 警告，仅记录日志
-    - enforcing: 强制
+SELinux:
+- 级别: SELinux 有两种工作级别，不同工作级别下，进程受到的控制并不相同
+    - strict： 每个进程都收到 selinux 的控制
+    - targeted: 仅有限个进程受到 selinux 的控制，只监控容易被入侵的进程
+- 状态: SELinux 根据启用与否有三个状态
+    - disabled: 禁用，关闭 SELinux
+    - enforcing: 启用，强制，一旦进程不符合 SELinux 的权限控制会禁止进程访问相关资源
+    - permissive: 启用，警告，SELinux 不会禁止进程违规访问资源，仅记录日志
 
-#### 1.2.2 工作模型
+
+## 2. SELinux 工作模型
 1. SELinux 为每个文件提供安全标签，也为每个进程提供安全标签
 2. 安全标签: user:role:type
     - user: SELinux 的 user
