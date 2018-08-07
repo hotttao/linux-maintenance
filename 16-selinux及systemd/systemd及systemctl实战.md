@@ -202,21 +202,22 @@ unit file 通常由如下 三个部分组成:
 	- 定义由`systemctl  enable`以及`systemctl  disable`命令在实现服务启用或禁用时用到的一些选项；
 
 ```bash
-# httpd.service
+# systemctl cat sshd
+# /usr/lib/systemd/system/sshd.service
 [Unit]
-Description=The Apache HTTP Server
-After=network.target remote-fs.target nss-lookup.target
-Documentation=man:httpd(8)
-Documentation=man:apachectl(8)
+Description=OpenSSH server daemon
+Documentation=man:sshd(8) man:sshd_config(5)
+After=network.target sshd-keygen.service
+Wants=sshd-keygen.service
 
 [Service]
 Type=notify
-EnvironmentFile=/etc/sysconfig/httpd
-ExecStart=/usr/sbin/httpd $OPTIONS -DFOREGROUND
-ExecReload=/usr/sbin/httpd $OPTIONS -k graceful
-ExecStop=/bin/kill -WINCH ${MAINPID}
-KillSignal=SIGCONT
-PrivateTmp=true
+EnvironmentFile=/etc/sysconfig/sshd
+ExecStart=/usr/sbin/sshd -D $OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s
 
 [Install]
 WantedBy=multi-user.target
@@ -249,8 +250,22 @@ WantedBy=multi-user.target
 - `ExecStartPost`：启动服务之后执行的命令
 - `ExecStopPost`：停止服务之后执行的命令
 - `Restart`：定义了服务退出后，Systemd 的重启方式
+	- `no`（默认值）：退出后不会重启
+	- `on-success`：只有正常退出时（退出状态码为0），才会重启
+	- `on-failure`：非正常退出时（退出状态码非0），包括被信号终止和超时，才会重启
+	- `on-abnormal`：只有被信号终止和超时，才会重启
+	- `on-abort`：只有在收到没有捕捉到的信号终止时，才会重启
+	- `on-watchdog`：超时退出，才会重启
+	- `always`：不管是什么退出原因，总是重启
+	- 附注: 对于守护进程，推荐设为on-failure。对于那些允许发生错误退出的服务，可以设为on-abnormal
 - `KillMode`:定义 Systemd 如何停止服务
+	- `control-group`（默认值）：当前控制组里面的所有子进程，都会被杀掉
+	- `process`：只杀主进程
+	- `mixed`：主进程将收到 SIGTERM 信号，子进程收到 SIGKILL 信号
+	- `none`：没有进程会被杀掉，只是执行服务的 stop 命令。
 - `RestartSec`：表示 Systemd 重启服务之前，需要等待的秒数
+
+对于 sshd 服务而言将KillMode设为process，表示只停止主进程，不停止任何sshd 子进程，即子进程打开的 SSH session 仍然保持连接。这个设置不太常见，但对 sshd 很重要，否则你停止服务的时候，会连自己打开的 SSH session 一起杀掉。Restart设为on-failure，表示任何意外的失败，就将重启sshd。如果 sshd 正常停止（比如执行systemctl stop命令），它就不会重启。
 
 
 所有的启动设置之前，都可以加上一个连词号（-），表示"抑制错误"，即发生错误的时候，不影响其他命令的执行。比如，`EnvironmentFile=-/etc/sysconfig/sshd`（注意等号后面的那个连词号），就表示即使/etc/sysconfig/sshd文件不存在，也不会抛出错误
