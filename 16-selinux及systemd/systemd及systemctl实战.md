@@ -1,5 +1,5 @@
 # 16.1 systemd及systemctl
-本节我们学习 Centos7 的开机启动程序 Systemd，及其服务管理工具 systemctl。本节内容如下:
+本节我们学习 Centos7 的开机启动程序 Systemd，及其服务管理工具 systemctl。我们会与 Centos6 中的 upstart 的启动程序对比来讲解。大家也可以参考[阮一峰老师的博客](http://www.ruanyifeng.com/blog/2016/03/systemd-tutorial-part-two.html)。本节内容如下:
 1. Systemd 概述
 2. Systemctl 命令的使用
 3. Systemd 配置文件格式
@@ -43,15 +43,61 @@ Sysv init 和 Upstart 中，服务的管理单元是一个个具有特定格式�
 
 #### systemd 的配置文件
 systemd 的配置文件位于以下三个目录中
-- `/usr/lib/systemd/system`
-- `/run/systemd/system`
-- `/etc/systemd/system`
+- `/usr/lib/systemd/system`: 实际配置文件的存存放位置
+- `/run/systemd/system`：不常用
+- `/etc/systemd/system`: 基本上都是软连接
+
+对于那些支持 Systemd 的软件，安装的时候，会自动在`/usr/lib/systemd/system`目录添加一个配置文件。
+如果你想让该软件开机启动，就执行下面的命令（以httpd.service为例）。
+
+```
+[root@hp system]# ll /etc/systemd/system/default.target
+lrwxrwxrwx. 1 root root 40 3月   5 17:37 /etc/systemd/system/default.target -> /usr/lib/systemd/system/graphical.target
+
+[root@hp system]# systemctl enable httpd
+Created symlink from /etc/systemd/system/multi-user.target.wants/httpd.service to /usr/lib/systemd/system/httpd.service.
+```
+
+上面的命令相当于在 `/etc/systemd/system` 目录添加一个符号链接，指向 `/usr/lib/systemd/system` 里面的httpd.service文件。
+这是因为开机时，Systemd只执行 `/etc/systemd/system` 目录里面的配置文件。这也意味着，如果把修改后的配置文件放在该目录，就可以达到覆盖原始配置的效果。
+
+除了使用普通的文本查看命令外查看配置文件外，`systemctl cat NAME.service` 可通过服务名称直接查看配置文件
+
+```bash
+[root@hp system]$ systemctl cat httpd
+# /usr/lib/systemd/system/httpd.service
+[Unit]
+Description=The Apache HTTP Server
+After=network.target remote-fs.target nss-lookup.target
+Documentation=man:httpd(8)
+Documentation=man:apachectl(8)
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/sysconfig/httpd
+ExecStart=/usr/sbin/httpd $OPTIONS -DFOREGROUND
+ExecReload=/usr/sbin/httpd $OPTIONS -k graceful
+ExecStop=/bin/kill -WINCH ${MAINPID}
+# We want systemd to give httpd some time to finish gracefully, but still want
+# it to kill httpd after TimeoutStopSec if something went wrong during the
+# graceful stop. Normally, Systemd sends SIGTERM signal right after the
+# ExecStop, which would kill httpd. We are sending useless SIGCONT here to give
+# httpd time to finish.
+KillSignal=SIGCONT
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
 
 
 ## 2. systemctl 命令使用
 ### 2.1 管理系统服务 (service unit)
 
 `systemctl  [OPTIONS...]  COMMAND  [NAME...]`
+- OPTIONS:
+	- `-t, --type=`: 指定查看的 unit 类型
+	- `-a, --all`：查看所由服务
 
 #### 服务启动与关闭
 |作用|init|systemctl|
@@ -64,12 +110,43 @@ systemd 的配置文件位于以下三个目录中
 |重载或重启服务||systemctl  reload-or-restart  NAME.servcie|
 |重载或条件式重启服务||systemctl  reload-or-try-restart  NAME.service|
 
+```
+[root@hp system]# systemctl status httpd
+● httpd.service - The Apache HTTP Server
+   Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since 二 2018-08-07 09:14:30 CST; 1s ago
+     Docs: man:httpd(8)
+           man:apachectl(8)
+ Main PID: 6170 (httpd)
+   Status: "Processing requests..."
+   CGroup: /system.slice/httpd.service
+           ├─6170 /usr/sbin/httpd -DFOREGROUND
+           ├─6174 /usr/sbin/httpd -DFOREGROUND
+           ├─6176 /usr/sbin/httpd -DFOREGROUND
+           ├─6177 /usr/sbin/httpd -DFOREGROUND
+           ├─6178 /usr/sbin/httpd -DFOREGROUND
+           ├─6180 /usr/sbin/httpd -DFOREGROUND
+           └─6181 /usr/sbin/httpd -DFOREGROUND
+
+8月 07 09:14:28 hp.tao systemd[1]: Starting The Apache HTTP Server...
+8月 07 09:14:30 hp.tao systemd[1]: Started The Apache HTTP Server.
+```
+输出:
+- Loaded行：配置文件的位置，是否设为开机启动
+- Active行：表示正在运行
+- Main PID行：主进程ID
+- Status行：由应用本身（这里是 httpd ）提供的软件当前状态
+- CGroup块：应用的所有子进程
+- 日志块：应用的日志
+
+
 #### 服务状态查看
 |作用|init|systemctl|
 |:---|:---|:---|
 |查看某服务当前激活与否的状态|| systemctl  is-active  NAME.service|
 |查看所有已激活的服务||systemctl  list-units  --type  service|
 |查看所有服务（已激活及未激活)|| systemctl  list-units  -t  service  --all|
+
 
 #### 开机自启
 |作用|init|systemctl|
@@ -124,7 +201,7 @@ unit file 通常由如下 三个部分组成:
 3. [Install]：
 	- 定义由`systemctl  enable`以及`systemctl  disable`命令在实现服务启用或禁用时用到的一些选项；
 
-```
+```bash
 # httpd.service
 [Unit]
 Description=The Apache HTTP Server
@@ -146,31 +223,70 @@ WantedBy=multi-user.target
 ```
 
 #### Unit段
-- `Description`：描述信息； 意义性描述；
+- `Description`：当前服务的简单描述
 - `After`：定义unit的启动次序；表示当前unit应该晚于哪些unit启动；其功能与Before相反；
-- `Requies`：依赖到的其它units；强依赖，被依赖的units无法激活时，当前unit即无法激活；
-- `Wants`：依赖到的其它units；弱依赖；
+- `Before`：定义sshd.service应该在哪些服务之前启动
+- `Requies`：依赖到的其它units；强依赖，被依赖的units无法激活或异常退出时，当前unit即无法激活；
+- `Wants`：依赖到的其它units；弱依赖，被依赖的units无法激活时，不影响当 unit 的启动；
 - `Conflicts`：定义units间的冲突关系；
+- 附注：
+	- After和Before字段只涉及启动顺序，不涉及依赖关系
+	- Wants字段与Requires字段只涉及依赖关系，与启动顺序无关，默认情况下是同时启动的
 
 #### Service段
 - `Type`：用于定义影响ExecStart及相关参数的功能的unit进程启动类型；
-	- simple：
-	- forking：
-	- oneshot：
-	- dbus：
-	- notify：
-	- idle：
-- `EnvironmentFile`：环境配置文件；
-- `ExecStart`：指明启动unit要运行命令或脚本；
-- `ExecStartPre`
-- `ExecStartPost`
-- `ExecStop`：指明停止unit要运行的命令或脚本；
-- `Restart`：
+	- `simple`（默认值）：ExecStart字段启动的进程为主进程
+	- `forking`：ExecStart字段将以fork()方式启动，此时父进程将会退出，子进程将成为主进程
+	- `oneshot`：类似于simple，但只执行一次，Systemd 会等它执行完，才启动其他服务
+	- `dbus`：类似于simple，但会等待 D-Bus 信号后启动
+	- `notify`：类似于simple，启动结束后会发出通知信号，然后 Systemd 再启动其他服务
+	- `idle`：类似于simple，但是要等到其他任务都执行完，才会启动该服务。一种使用场合是为让该服务的输出，不与其他服务的输出相混合
+- `EnvironmentFile`：指定当前服务的环境参数文件
+- `ExecStart`：指明启动unit要运行命令或脚本；其中的变量$OPTIONS就来自EnvironmentFile字段指定的环境参数文件
+- `ExecReload`：重启服务时执行的命令
+- `ExecStop`：停止服务时执行的命令
+- `ExecStartPre`：启动服务之前执行的命令
+- `ExecStartPost`：启动服务之后执行的命令
+- `ExecStopPost`：停止服务之后执行的命令
+- `Restart`：定义了服务退出后，Systemd 的重启方式
+- `KillMode`:定义 Systemd 如何停止服务
+- `RestartSec`：表示 Systemd 重启服务之前，需要等待的秒数
+
+
+所有的启动设置之前，都可以加上一个连词号（-），表示"抑制错误"，即发生错误的时候，不影响其他命令的执行。比如，`EnvironmentFile=-/etc/sysconfig/sshd`（注意等号后面的那个连词号），就表示即使/etc/sysconfig/sshd文件不存在，也不会抛出错误
 
 #### Install段
 - `Alias`：
 - `RequiredBy`：被哪些units所依赖；
-- `WantedBy`：被哪些units所依赖；
+- `WantedBy`：表示该服务所在的 Target
 
-### 3.2 重载 unit 文件
+### 3.2 修改配置文件后重启
 对于新创建的unit文件或修改了的unit文件，要通知systemd重载此配置文件 `systemctl  daemon-reload`
+
+
+## 4.Target 的配置文件
+
+```bash
+[root@hp system]$ systemctl cat multi-user.target
+# /usr/lib/systemd/system/multi-user.target
+#  This file is part of systemd.
+#
+#  systemd is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation; either version 2.1 of the License, or
+#  (at your option) any later version.
+
+[Unit]
+Description=Multi-User System
+Documentation=man:systemd.special(7)
+Requires=basic.target
+Conflicts=rescue.service rescue.target
+After=basic.target rescue.service rescue.target
+AllowIsolate=yes
+```
+
+Target 配置文件里面没有启动命令
+- `Requires`：要求basic.target一起运行。
+- `Conflicts`：冲突字段。如果rescue.service或rescue.target正在运行，multi-user.target就不能运行，反之亦然。
+- `After`：表示multi-user.target在basic.target 、 rescue.service、 rescue.target之后启动，如果它们有启动的话。
+- `AllowIsolate`：允许使用systemctl isolate命令切换到multi-user.target
