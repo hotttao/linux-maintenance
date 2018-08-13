@@ -92,7 +92,7 @@
     * [18.4 私建CA.md](18-通信加密和解密技术/私建CA.md)
 * [19. DNS域名解析实战](19-DNS域名解析实战/README.md)
     * [19.1 DNS域名服务原理](19-DNS域名解析实战/DNS域名服务原理.md)
-    * [19.2 DNS服务解析过程](19-DNS域名解析实战/DNS服务解析过程.md)
+    * [19.2 DNS区域数据库文件格式.md](19-DNS域名解析实战/DNS区域数据库文件格式.md.md)
     * [19.3 bind安装和配置](19-DNS域名解析实战/bind安装和配置.md)
     * [19.4 bind实现主从DNS](19-DNS域名解析实战/bind实现主从DNS.md)
 * [20. web](20-web-apache/README.md)
