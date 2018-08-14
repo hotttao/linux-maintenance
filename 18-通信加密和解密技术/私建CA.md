@@ -1,7 +1,7 @@
 # 18.4 私建 CA
 很多时候我们为了测试目的，或者不便让用户去申请证书，我们就需要私建 CA，本节我们就来讲解如何私建 CA。
 
-## 1. 私建 CA 
+## 1. 私建 CA
 CA创建的工具有两个，小范围内可直接使用 `openssl` 命令，如果要维护大量的CA，可以使用完全 CA 创建工具 openCA。
 
 那么如何创建 CA？前面我们知道 PKI 公钥基础设施包括如下几个部分:
@@ -62,8 +62,8 @@ default_crl_days= 30                    # how long before next CRL
 `openssl ca`
 - 作用: CA 签发证书
 - 选项:
-	- `-in <file$`: 证书签署请求文件路径
-	- `-out <file$`: 生成的新证书的保存路径
+	- `-in <file>`: 证书签署请求文件路径
+	- `-out <file>`: 生成的新证书的保存路径
 	- `-days`：证书的有效时长，单位是day；
 
 `openssl  x509`
@@ -72,7 +72,7 @@ default_crl_days= 30                    # how long before next CRL
 	- `-in`：指定输入文件，默认是标准输入。
 	- `-out`：指定输出文件，默认是标准输出。
 	- `-passin`：指定私钥密码的来源
-	- `-seria`：显示序列号。
+	- `-serial`：显示序列号。
 	- `-subject`：打印项目的DN
 	- `-issuer`：打印签发者的DN
 	- `-email`：打印email地址
@@ -126,7 +126,7 @@ $ openssl  req  -new  -key  /etc/httpd/ssl/httpd.key  -out /etc/httpd/ssl/httpd.
 # 3.2  将请求通过可靠方式发送给CA主机；
 $ scp /etc/httpd/ssl/httpd.csr root@196.168.1.105:/tmp
 
-# 3.3 在CA主机上签署证书 (crt - certificate 的简写) 
+# 3.3 在CA主机上签署证书 (crt - certificate 的简写)
 $ openssl ca  -in  /tmp/httpd.csr  -out  /etc/pki/CA/certs/httpd.crt  -days  365
 
 # 3.4 查看证书中的信息：
