@@ -94,7 +94,7 @@
     * [19.1 DNS域名服务原理](19-DNS域名解析实战/DNS域名服务原理.md)
     * [19.2 DNS区域数据库文件格式](19-DNS域名解析实战/DNS区域数据库文件格式.md)
     * [19.3 bind安装和配置](19-DNS域名解析实战/bind安装和配置.md)
-    * [19.4 bind实现主从DNS](19-DNS域名解析实战/bind实现主从DNS.md)
+    * [19.4 bind高级配置](19-DNS域名解析实战/bind高级配置.md)
 * [20. web](20-web-apache/README.md)
     * [20.1 web服务基础概念和发展介绍](20-web-apache/web服务基础概念和发展介绍.md)
     * [20.2 http协议全面讲解](20-web-apache/http协议全面讲解.md)
