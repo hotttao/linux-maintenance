@@ -157,12 +157,23 @@ boot 界面有如下选项可供使用:
 > mkdir /tmp/myiso/isolinux
 > cp /media/cdrom/isolinux/* /tmp/myiso/isolinux
 > cp /root/kickstart.cfg /tmp/myiso/isoLinux
+# centos6
 > mkisofs -R -J -T -v --no-emul-boot --boot-load-size 4 --boot-info-table -V "CentOS 6 x86_64 boot" -c isolinux/boot.cat -b isolinux/isolinux.bin -o  /root/boot.iso  myiso/
 
+# Centos7
+> sudo genisoimage -o CentOS-7.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -R -J -v -T  -V "CentOS 7 x86_64"  -eltorito-alt-boot    -bimages/efiboot.img      -no-emul-boot myboot/
+
 ## 配置 isolinux/isolinux.cfg 添加安装项，直接配置 ks 参数
-label linux ks
-  menu
-  menu
-  kernal vmlinuz
-  appeed initrd=initrd.img  ks=cdrom:/kickstart.cfg
+label ks
+  menu label ^Install CentOS 7
+  kernel vmlinuz
+  append initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet ks=cdrom:/ks.cfg
 ```
+
+#### mkisofs
+使用 mkisofs 创建磁盘镜像文件时，有以下几个特别注意的点需要注意:
+1. `-V` 参数指定的标签必需与 `isolinux/isolinux.cfg` 中的 `hd:LABEL=`的值相同，否则开机启动时将找不到磁盘镜像文件
+3. 如果要在 efi 启动，需要添加如下参数： `-eltorito-alt-boot    -bimages/efiboot.img      -no-emul-boot`
+2. 不能在 Centos6 的系统上制作 Centos7 因为两者系统的 genisoimage 命令的版本不一样， 6 的系统制作出来的 iso 不能在 efi 环境启动；
+
+详细可参考这边博客 https://www.linuxidc.com/Linux/2015-03/114509.htm
