@@ -9,7 +9,7 @@ httpd 目前有如下主流的版本
 - httpd 2.2: Centos6 base 仓库的默认安装版本
 - httpd 2.4：目前最新稳定版，Centos7 base 仓库的默认安装版本
 
-httpd2.2 和 httpd2.4 目前都有使用，他们之间存在比较大的差异。在介绍 httpd 的配置时，我们将主要以 httpd2.4 为主，对于 http2.2 中差异较大的，我们会单独指出。
+httpd2.2 和 httpd2.4 目前都有使用，他们之间存在比较大的差异。在介绍 httpd 的配置时，我们将首先介绍 http2.2，然后针对 httpd2.4 的不同之处单独讲解。
 
 ### 1.2 httpd的特性
 httpd 具有如下的一些关键特性:
@@ -40,6 +40,16 @@ httpd 可以通过 base 仓库的 rpm 包直接安装，也可以编译安装。
 
 ### 2.1 httpd2.2 与 httpd2.4 的对比
 下面是 httpd2.2 httpd2.4 安装，管理，以及配置文件路经的对比
+
+```
+$ ll /etc/httpd/
+总用量 0
+drwxr-xr-x. 2 root root  37 5月  22 19:20 conf
+drwxr-xr-x. 2 root root 151 5月   8 09:35 conf.d
+lrwxrwxrwx. 1 root root  19 2月  10 2018 logs -> ../../var/log/httpd
+lrwxrwxrwx. 1 root root  29 2月  10 2018 modules -> ../../usr/lib64/httpd/modules
+lrwxrwxrwx. 1 root root  10 2月  10 2018 run -> /run/httpd
+```
 
 |配置|httpd2.2|httpd2.4|
 |:---|:---|:---|
@@ -104,7 +114,7 @@ $ rpm -ql httpd-tools
 /usr/bin/ab           # web 服务测试工具
 /usr/bin/htdbm
 /usr/bin/htdigest
-/usr/bin/htpasswd     # 
+/usr/bin/htpasswd     #
 /usr/bin/httxt2dbm
 /usr/bin/logresolve
 ```
