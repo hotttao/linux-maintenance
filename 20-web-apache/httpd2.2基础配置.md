@@ -1,4 +1,4 @@
-# 20.4 httpd2.2 的基础配置
+# 20.5 httpd2.2 的基础配置
 本节我们来讲解 httpd2.2 的基础配置
 
 ## 1. httpd-2.2 配置文件格式
@@ -32,101 +32,10 @@ Include conf.modules.d/*.conf
 - directive：配置参数，不区分字符大小写；
 - value：参数值，为路径时，是否区分字符大小写，取决于文件系统；
 
-## 2. httpd 相关命令的使用
-### 2.1 httpd
-`httpd[.event|worker] OPTIONS`
-- 作用: httpd 主程序
-- 选项:
-	- `-t`: 仅对配置文件执行语法检查。程序在语法解析检查结束后立即退出，或者返回"0"(OK)，或者返回非0的值(Error)。如果还指定了"-D DUMP_VHOSTS"，则会显示虚拟主机配置的详细信息
-	- `-l`: 输出一个静态编译在服务器中的模块的列表。它不会列出使用LoadModule指令动态加载的模块。
-	- `-L`: 输出一个指令的列表，并包含了各指令的有效参数和使用区域。
-	- `-M`: 输出一个已经启用的模块列表，包括静态编译在服务器中的模块和作为DSO动态加载的模块。
-	- `-v`: 显示httpd的版本，然后退出。
-	- `-V`: 显示httpd和APR/APR-Util的版本和编译参数，然后退出。
-	- `-X`: 以调试模式运行httpd 。仅启动一个工作进程，并且服务器不与控制台脱离
-	- `-d serverroot`: 将ServerRoot指令设置初始值为serverroot。它可以被配置文件中的ServerRoot指令所覆盖。
-	- `-f config`: 在启动中使用config作为配置文件。如果config不以"/"开头，则它是相对于ServerRoot的路径
-	- `-k start|restart|graceful|stop|graceful-stop`: 发送信号使httpd启动、重新启动或停止 。
-	- `-C directive`: 在读取配置文件之前，先处理directive的配置指令。
-	- `-c directive`: 在读取配置文件之后，再处理directive的配置指令。
-	- `-D parameter`: 设置参数parameter ，它配合配置文件中的<IfDefine>段，用于在服务器启动和重新启动时，有条件地跳过或处理某些命
-	- `-e level`: 在服务器启动时，设置LogLevel为level 。它用于在启动时，临时增加出错信息的详细程度，以帮助排错。
-	- `-E file`: 将服务器启动过程中的出错信息发送到文件file 。
-	- `-R directory`: 当在服务器编译中使用了SHARED_CORE规则时，它指定共享目标文件的目录为directory 。
-	- `-h`: 输出一个可用的命令行选项的简要说明。
-	- `-S`: 显示从配置文件中读取并解析的设置结果(目前仅显示虚拟主机的设置)
-	- `-T`: 在启动/重启的时候跳过根文件检查 (该参数在Apache 2.2.17及其以后版本有效)
-- `-t` 选项的扩展:
-	- `httpd -t -D DUMP_VHOSTS` : 显示虚拟主机的配置
-	- `httpd -t -D DUMP_RUN_CFG` : show parsed run setting
-	- `httpd -t -D DUMP_MODULES` : 显示所有已经启动的模块
-	- `httpd -M` : `httpd -t -D DUMP_MODULES` 的快捷方式
-
-```
-$ httpd -l
-Compiled in modules:
-  core.c
-  mod_so.c
-  http_core.c
-
-$ httpd -M
-Loaded Modules:
- core_module (static)
- so_module (static)
- http_module (static)
- access_compat_module (shared)
- actions_module (shared)
- .......
-
-$ httpd -t
-Syntax OK
-```
-
-### 2.2 apachectl
-`apachectl OPTIONS`
-- 作用: 是slackware内附Apache HTTP服务器的script文件，可供管理员控制服务器
-- 选项:
-	- `configtest`: 检查设置文件中的语法是否正确。
-	- `fullstatus`: 显示服务器完整的状态信息。
-	- `graceful`: 重新启动Apache服务器，但不会中断原有的连接。
-	- `help`: 显示帮助信息。
-	- `restart`: 重新启动Apache服务器。
-	- `start`: 启动Apache服务器。
-	- `status`: 显示服务器摘要的状态信息。
-	- `stop`: 停止Apache服务器
-- 说明: `httpd` 命令的所有选项， `apachectl` 均可用
-
-### 2.3 htpasswd
-`htpasswd OPTIONS passwordfile username [password]`
-- 作用: 用于创建和更新储存用户名、域和用户基本认证的密码文件
-- 参数:
-	- `passwordfile`: 密码文件的路经，使用 `-n` 选项时，无需此参数
-	- `username`: 用户名
-	- `password`: 密码，使用`-b` 选项时必需，默认显示提示符让用户输入密码
-- 选项:
-	- `-c`：创建一个加密文件，文件已经存在会删除重建
-	- `-b`：在命令行中一并输入用户名和密码而不是根据提示输入密码
-	- `-D`：删除指定的用户
-	- `-n`：不更新加密文件，只将加密后的用户名密码显示在屏幕上
-	- `-m`：默认采用MD5算法对密码进行加密
-	- `-d`：采用CRYPT算法对密码进行加密
-	- `-p`：不对密码进行进行加密，即明文密码
-	- `-s`：采用SHA算法对密码进行加密
-
-```
-$ htpasswd -c /tmp/.httpd tao  # 首次创建文件，需要使用 -c
-New password:
-Re-type new password:
-Adding password for user tao
-
-$ htpasswd -b /tmp/.httpd pythoner python # 非首次创建不能使用 `-c` 否则会删除已有文件
-Adding password for user pythoner
-```
-
-## 3. httpd-2.2 常用配置
+## 2. httpd-2.2 常用配置
 httpd2.2 的官方文档: http://httpd.apache.org/docs/2.2/
 
-### 3.1 修改监听的IP和PORT
+### 2.1 修改监听的IP和PORT
 `Listen  [IP:]PORT`
 1. 省略IP表示监听本地所有地址
 2. Listen指令可重复出现多次，以监听多个IP地址和端口；
@@ -134,7 +43,7 @@ httpd2.2 的官方文档: http://httpd.apache.org/docs/2.2/
     - `Listen  8080`
 3. 修改监听socket(不是新增)，需要重启服务进程才能生效；
 
-### 3.2 持久连续
+### 2.2 持久连续
 Persistent Connection
 ```
 # 持久链接配置相关参数
@@ -152,7 +61,7 @@ http 与长连接相关的参数包括
 2. `KeepAliveTimeout time`: 持久链接最大连接时长,httpd-2.4 支持毫秒级持久时间
 3. `MaxKeepAliveRequests`: 单个持久连接能够处理的对大请求数
 
-### 3.3 MPM
+### 2.3 MPM
 MPM(Multipath Process Module) 多道处理模块,用来确定 httpd 响应用户请求的模型。
 对于 httpd2.2:
 - 不支持同时编译多个MPM模块，所以只能编译选定要使用的那个。
@@ -210,7 +119,7 @@ MaxRequestsPerChild  0 # 每个线成能处理的请求总数，超过会自动�
 #### event 的配置
 event 在 httpd2.2 中尚且属于测试阶段，不建议在线上使用
 
-### 3.4 DSO
+### 2.4 DSO
 `LoadModule  mod_name  mod_path`
 - 作用: 实现模块加载:  
 - 参数:
@@ -223,7 +132,7 @@ LoadModule alias_module modules/mod_alias.so
 # /etc/httpd/modules    ---> /usr/lib64/httpd/modules
 ```
 
-### 3.5 'Main' server配置
+### 2.5 'Main' server配置
 `DocumentRoot Dir`
 - 作用: 文档路径映射,DoucmentRoot指向的路径为URL路径的起始位置, 其相当于站点URL的根路径；
 
@@ -294,8 +203,8 @@ http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
 |%{User-Agent}i|请求报文中首部“User-Agent”的值；即发出请求的应用程序|
 
 
-## 4. httpd2.2 访问控制
-### 4.1 访问控制机制
+## 3. httpd2.2 访问控制
+### 3.1 访问控制机制
 访问控制值的时允许哪些用户访问哪些站点资源
 1. 用户可以通过`来源地址` 或 `账号` 指定，
 2. 资源可以通过`文件系统路径` 或 `URL` 指定
@@ -335,7 +244,7 @@ URL 有如下两种配置方式
 </LocationMatch>
 ```
 
-### 4.1 Directory 中“基于源地址”实现访问控制：
+### 3.1 Directory 中“基于源地址”实现访问控制：
 ```
 <Directory  "/var/www/html">
 Options All，None，Indexes FollowSymLinks SymLinksifOwnerMatch ExecCGI MultiViews
@@ -384,7 +293,7 @@ http2.2 访问控制参数如下:
 </Directory>
 ```
 
-### 4.2 基于用户的访问控制
+### 3.2 基于用户的访问控制
 WWW-Authenticate（认证质询）是 http 协议早期提供的用户认证机制。当用户请求受控资源时，服务器响应 401，拒绝客户端请求，并说明要求客户端提供账号和密码；浏览器接收到响应时，会弹出认证窗口，客户端用户填入账号和密码后再次发送请求报文；认证通过时，则服务器发送响应的资源。需要用户认证后方能访问的路径；应该通过名称对其进行标识，以便于告知用户认证的原因。
 
 WWW-Authenticate 认证方式有两种：
@@ -432,24 +341,19 @@ $ htpassword -cb /etc/httpd/.httpd tao tao
   admin: tom jerry                            # tom, jerry 为 admin 组
 ```
 
-## 5. 虚拟主机
-- socket = ip + 端口
-- IP相同，但端口不同；
-- IP不同，但端口均为默认端口；
-- FQDN不同；
-      - 请求报文中首部
-      - Host: www.magedu.com
-- 有三种实现方案：
-    - 基于ip：    为每个虚拟主机准备至少一个ip地址；
-    - 基于port：为每个虚拟主机使用至少一个独立的port；
-    - 基于FQDN:  为每个虚拟主机使用至少一个FQDN；
-    - 基于hostname: 为每个虚拟主机准备至少一个专用的 hostname， 常用
-    - 注意：一般虚拟机不要与中心主机混用；因此，要使用虚拟主机，得先；
-    - ；
+## 4. 虚拟主机
+通常如果我们在同一主机上提供了多个彼此毫不相干的服务时，通常是将他们隔离开，放在不同的域名下进行管理，而不是放在同一域名下；以免某一站点被劫持，所有站点都被劫持。虚拟主机就是帮助我们实现一个物理服务器服务多个网站的功能。
 
-httpd 中心主机与虚拟主机不能混用，httpd2.2 中使用虚拟主机必需禁用'main'主机,禁用方法：`注释中心主机的DocumentRoot指令即可`。http2.4 中启用虚拟主机后，中心主机会自动禁用。
+web 服务通过 tcp 进行通信，即每个服务都监听在一个特定的套接子socket 上，`socket = ip + 端口`，所以实现虚拟主机就有如下几种方法:
+1. IP相同，但端口不同；
+2. IP不同，但端口均为默认端口；
+3. FQDN不同: 为不同的 web 服务配置不同的域名
 
-#### 虚拟主机的配置方法
+需要注意的是请求报文首部中的 Host 字段会保留浏览器中用户请求的域名，因此服务器端可以通过解析Host 字段来路由请求。httpd 中心主机与虚拟主机不能混用，httpd2.2 中使用虚拟主机必需禁用'main'主机,禁用方法：`注释中心主机的DocumentRoot指令即可`。http2.4 中启用虚拟主机后，中心主机会自动禁用。
+
+### 4.1 虚拟主机的配置方法
+所有能用在中心主机的配置，均可以用在虚拟主机中
+
 ```
 <VirtualHost  IP:PORT>
     ServerName FQDN  
@@ -468,7 +372,7 @@ httpd 中心主机与虚拟主机不能混用，httpd2.2 中使用虚拟主机�
 </VirtualHost>
 ```
 
-#### 基于IP的虚拟主机示例：
+### 4.2 基于IP的虚拟主机示例：
 ```
 <VirtualHost 192.168.1.120:80>
     ServerName web1.tao.com
@@ -491,7 +395,7 @@ httpd 中心主机与虚拟主机不能混用，httpd2.2 中使用虚拟主机�
 </VirtualHost>
 ```
 
-####  基于端口的虚拟主机：
+### 4.3  基于端口的虚拟主机：
 ```
 <VirtualHost 172.16.100.6:80>
   ServerName www.a.com
@@ -509,7 +413,7 @@ httpd 中心主机与虚拟主机不能混用，httpd2.2 中使用虚拟主机�
 </VirtualHost>
 ```
 
-#### 基于 hostname 的虚拟主机：
+### 4.4 基于 hostname 的虚拟主机：
 ```
 # 重要，http2.2 中需要指明 NameVirtualHost
 NameVirtualHost 172.16.100.6:80
@@ -530,9 +434,9 @@ NameVirtualHost 172.16.100.6:80
 </VirtualHost>                                            
 ```
 
-## 6. status页面
-LoadModule  status_module  modules/mod_status.so
+## 5. status页面
 ```
+LoadModule  status_module  modules/mod_status.so
 <Location /server-status>
     SetHandler server-status
     Order allow,deny

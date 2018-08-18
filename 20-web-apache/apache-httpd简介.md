@@ -1,4 +1,4 @@
-# 20.3 apache httpd 简介
+# 20.4 apache httpd 简介
 httpd 是 ASF(apache software foundation, apache 软件基金会)下的顶级项目，也是目前市场占有率最高的 web 服务器。本节我们就来对 httpd 做一个概括行的介绍。在之后的章节我们再来详细的学习 httpd 的配置。
 
 ## 1. httpd 简介

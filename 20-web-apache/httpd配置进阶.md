@@ -1,19 +1,34 @@
-# 20.6 httpd 配置进阶
-## 3. httpd-2.2的常见配置(2)
-### 3.2 user/group
-- 指定以哪个用户的身份运行httpd服务进程；
-    - User apache
-    - Group apache
-    - SUexec
+# 20.7 httpd 配置进阶
+我们来继续学习 httpd 的配置，本节属于高级配置篇，核心是配置httpd支持https。
 
-### 3.3 使用mod_deflate模块压缩页面优化传输速度
-- 适用场景：
-    - 节约带宽，额外消耗CPU；同时，可能有些较老浏览器不支持；
-    - 压缩适于压缩的资源，例如文件文件；
+## 1. 指定 httpd 服务的运行身份
 ```
-SetOutputFilter DEFLATE
+User apache
+Group apache
+```
+`User` 和 `Group` 指令用于指定以哪个用户的身份运行httpd服务进程。该帐户决定了 httpd 进程在本机的权限。千万不能以 root 用户运行我们的 httpd 进程，以免 httpd 被劫持导致整个机器被控制。
 
-# mod_deflate configuration
+需要注意的是如果指定的帐户没有权限访问文件系统上的内容，即便 `<Directory>` 开放了访问接口也一样无法访问。因此 httpd 提供了 `SUexec`，用于在特定的目录内进行用户切换以便能够方便的访问到受限的文件，而不用更改文件的权限。`SUexec`有安全风险，一般也很少使用。
+
+## 2. 页面压缩
+`mod_deflate` 模块提供了压缩功能。压缩可以节约带宽，但是会额外消耗CPU；同时，可能有些较老浏览器不支持。是否启用压缩取决于网络带宽与 CPU 哪个更加稀缺。
+
+有些资源是可压缩的，例如文件文件，而有些资源本身已经是压缩的，比如图片，这些则无需压缩。httpd 的压缩功能配置如下:
+
+```
+# 1. 首先确认是否加载了 deflate 模块
+$ httpd -M|grep -i deflate  
+deflate_module (shared)
+
+# 2. 没有加载，则在配置文件中加载 deflate_module
+LoadModule deflate_module modules/mod_deflate.so
+
+# 3. 配置压缩功能
+$ vim /etc/httpd/conf.d/compress.conf  # 在单独配置文件中配置，方便取消
+
+SetOutputFilter DEFLATE               # 添加一个过滤器   
+
+# mod_deflate configuration           # 向过滤器添加压缩哪些内容
 # Restrict compression to these MIME types
 AddOutputFilterByType DEFLATE text/plain
 AddOutputFilterByType DEFLATE text/html
@@ -25,9 +40,9 @@ AddOutputFilterByType DEFLATE text/javascript
 AddOutputFilterByType DEFLATE text/css
 
 # Level of compression (Highest 9 - Lowest 1)
-DeflateCompressionLevel 9
+DeflateCompressionLevel 9           # 默认压缩级别
 
-# Netscape 4.x has some problems.
+# Netscape 4.x has some problems.   # 特殊浏览器的特殊处理
 BrowserMatch ^Mozilla/4  gzip-only-text/html
 
 # Netscape 4.06-4.08 have some more problems
@@ -37,11 +52,11 @@ BrowserMatch  ^Mozilla/4\.0[678]  no-gzip
 BrowserMatch \bMSI[E]  !no-gzip !gzip-only-text/html
 ```
 
-### 3.4 配置httpd支持https
+## 3. 配置httpd支持https
+SSL会话是基于IP地址创建；所以单IP的主机上，仅可以使用一个https虚拟主机
+### 3.1 SSL会话的简化过程
+![https](../images/20/https.png)
 
-
-
-#### SSL会话的简化过程
 1. 客户端发送可供选择的加密方式，并向服务器请求证书；
 2. 服务器端发送证书以及选定的加密方式给客户端；
 3. 客户端取得证书并进行证书验正：
@@ -52,39 +67,34 @@ BrowserMatch \bMSI[E]  !no-gzip !gzip-only-text/html
     - 证书中拥有者的名字，与访问的目标主机要一致；
 4. 客户端生成临时会话密钥（对称密钥），并使用服务器端的公钥加密此数据发送给服务器，完成密钥交换；
 5. 服务用此密钥加密用户请求的资源，响应给客户端；
-6. 注意：SSL会话是基于IP地址创建；所以单IP的主机上，仅可以使用一个https虚拟主机；
 
-#### 配置httpd支持https：
-1. 为服务器申请数字证书；
-    - 测试：通过私建CA发证书
-        - 创建私有CA
-        - 在服务器创建证书签署请求
-        - CA签证
+### 3.2 配置httpd支持https
+配置 https 需要如下几个步骤:
+1. 为服务器申请数字证书。本地测试时，可以私建CA发证书
 2. 配置httpd支持使用ssl，及使用的证书；
-    - yum -y install mod_ssl
-    - 配置文件：/etc/httpd/conf.d/ssl.conf
-        - DocumentRoot
-        - ServerName
-        - SSLCertificateFile
-        - SSLCertificateKeyFile
 3. 测试基于https访问相应的主机；
-    - openssl  s_client  [-connect host:port] [-cert filename] [-CApath directory] [-CAfile filename]
 
-## 4. httpd自带的工具程序
-1. htpasswd：basic认证基于文件实现时，用到的账号密码文件生成工具；
-2. apachectl：httpd自带的服务控制脚本，支持start和stop,restart；
-3. apxs：由httpd-devel包提供，扩展httpd使用第三方模块的工具；
-4. rotatelogs：日志滚动工具；
-5. suexec：访问某些有特殊权限配置的资源时，临时切换至指定用户身份运行；
-6. ab： apache benchmark
+#### 私建 CA 发证
+参见[18.4 私建CA.md](18-通信加密和解密技术/私建CA.md)
 
-### 4.1 httpd的压力测试工具
-- ab, webbench, http_load, seige
-- jmeter, loadrunner
-- tcpcopy：网易，复制生产环境中的真实请求，并将之保存下来；
+#### 配置 ssl
+```
+# 1. 安装 httpd 的 ssl 功能模块
+yum -y install mod_ssl
 
-ab  [OPTIONS]  URL
-- -n：总请求数；
-- -c：模拟的并行数；
-- -k：以持久连接模式 测试；
-- - 附注: ulimit -n num - 调整当前用户能同时打开的文件数
+# 2. 编辑配置文件
+$ vim /etc/httpd/conf.d/ssl.conf  
+DocumentRoot "/var/www/html"
+ServerName   "www.magedu.com:443"
+SSLCertificateFile  "/etc/httpd/ssl/http_crt.pem"
+SSLCertificateKeyFile "/etc/httpd/ssl/http_key.pem"
+```
+
+#### 测试 https 服务
+我们可以在浏览器导入我们私建的 CA 直接在浏览器中进行测试，也可以通过 `openssl` 的 `s_client` 子命令进行测试
+
+`openssl  s_client  OPTIONS`
+- 作用: https 连接的客户端工具
+- 选项:
+  - `[-connect host:port]`: 连接的主机和端口
+  - `[-CAfile filename]`: CA 证书的位置
