@@ -44,12 +44,7 @@ FCGI 是 CGI 的增强版本，其动态资源的请求过程如下所示
 
 此 LAMP 的结构如下所示
 
-```
-httpd
-
-
-
-```
+![modules_fcgi](../images/21/modules.png)
 
 ### 1.4 LAMP 架构
 ![web_serve](../images/20/web_server.jpg)
