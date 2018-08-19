@@ -27,74 +27,35 @@ CGI(Common Gateway Interface，通用网关接口)，是一种传输协议，它
 CGI 在每响应一个动态资源时，必须创建和销毁子进程，性能很低。
 
 ### 1.2 FCGI
-FCGI 是 CGI 的版本，其动态资源的请求过程如下所示
+FCGI 是 CGI 的增强版本，其动态资源的请求过程如下所示
 
 ![fcgi](../images/21/fcgi.png)
 
 - 后端应用程序服务器作为独立的服务监听在特定端口，与 httpd 通过 tcp/udp 协议进行通信
 - httpd 接收用户请求后，作为客户端向应用程序服务器请求相同的动态资源
-- 后端应用程序服务器加载并执行 php 脚本，并将执行结果作为响应返回个 httpd，httpd 在响应给客户端
-- 此时 httpd 起到了反向代理的作用
+- 后端应用程序服务器加载并执行 php 脚本，并将执行结果作为响应返回给 httpd，httpd 响应给客户端
+- httpd 起到了反向代理的作用
 
 后端应用程序服务器可以预先创建子进程，这样避免了每次请求都必须创建和销毁子进程带来的开销。
 
-对于 php 而言，php 可作为 httpd 的一个模块存在，此时 httpd 既是一个静态 web 服务器，也充当应用程序服务器。
+对于 php 而言还存在另一中 FCGI 模式。php 解释功能可作为 httpd 的一个模块存在，httpd 可直接执行 php 脚本，无需创建和销毁子进程。此时 httpd 既是一个静态 web 服务器，也充当应用程序服务器。这种模式也存在一定缺陷:
+1. web 服务器和应用程序服务器无法分离开
+2. 每个执行 php 的 httpd 进程都必需独自解析 php 脚本，无法利用 php 的加速技术。
 
-### 1.3 LAMP 架构
+此 LAMP 的结构如下所示
+
+```
+httpd
+
+
+
+```
+
+### 1.4 LAMP 架构
 ![web_serve](../images/20/web_server.jpg)
 
-一个经典的 LAMP 架构如上图所示，LAMP 组成包括:
+一个经典的 LAMP 架构如上图所示，包括:
 - l: Linux
 - a: apache httpd
 - m: 数据库存储系统，可以是 mysql, mariadb，mongo
 - p: 后端应用程序的开发语言，可以是 php, perl, python
-
-
-## 2. LAMP 安装
-### 2.1 Centos 6
-- 程序包: httpd, php, php-mysql, mysql-server
-- 启动服务：
-    - service httpd start
-    - service mysqld start
-
-### 2.2 Centos 7
-- 程序包: httpd, php, php-mysql, mariadb-server
-- 注意: php 在不同的 MPM 下安装的方式不一样，默认 `yum install php` 安装要求 httpd 使用 prefork MPM
-- php 配置文件: `/etc/httpd/conf.d/php.conf`
-- 启动服务：
-    - systemctl start httpd
-    - systemctl start mariadb
-```
-yum install php php-mysql  mariadb-server
-systemctl start httpd
-systemctl start mariadb
-```
-
-### 2.3 测试
-php 程序执行环 境
-```
-<?php
-    phpinfo()
-?>
-```
-
-php 与mysql 通信
-```
-# vim DocumentRoot/a.php
-<?php
-    $con=mysql_connect('127.0.0.1','','');
-    if ($con)
-        echo "OK";
-    else
-        echo "faile";
-    mysql_close();
-    phpinfo();
-?>
-```
-
-## 3. httpd 与 php 结合方式
-1. CGI
-2. FastCGI(fpm)
-3. modules (把php编译成为httpd的模块)
-    - prefork: libphp5.so
-    - event, worker: libphp5-zts.so
