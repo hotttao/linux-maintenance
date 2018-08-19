@@ -98,15 +98,44 @@ $ htpasswd -b /tmp/.httpd pythoner python # 非首次创建不能使用 `-c` 否
 Adding password for user pythoner
 ```
 
-## 4 httpd的压力测试工具
+## 3. curl
+`curl  [options]  [URL...]`
+- 作用:
+    - curl是基于URL语法在命令行方式下工作的文件传输工具
+    - 支持FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE及LDAP等协议
+    - 支持HTTPS认证，并且支持HTTP的POST、PUT等方法， FTP上传， kerberos认证，HTTP上传，代理服务器， cookies， 用户名/密码认证， 下载文件断点续传，上载文件断点续传, http代理服务器管道（ proxy tunneling）， 甚至它还支持IPv6， socks5代理服务器,，通过http代理服务器上传文件到FTP服务器等等，功能十分强大。
+- options:
+    - `-e/--referer <URL>`:  来源网址
+    - `-A/--user-agent <string>`:  设置用户代理发送给服务器
+    - `-H/--header <line>`: 自定义首部信息传递给服务器
+    - `-I/--head` 只显示响应报文首部信息
+    - `--basic`: 使用HTTP基本认证
+    - `-u/--user <user[:password]>`: 设置服务器的用户和密码
+    - `--cacert <file>`:  CA证书 (SSL)
+    - `--compressed` 要求返回是压缩的格式
+    - `--limit-rate <rate>`:  设置传输速度
+    - `-0/--http1.0`: 使用HTTP 1.0
+    - `--tcp-nodelay`: 使用TCP_NODELAY选项
+```
+
+```
+
+## 5. elinks   
+`elinks  [OPTION]... [URL]...`
+- 作用: 文本浏览器
+- 选项:
+	- `-dump`: 不进入交互式模式，而直接将URL的内容输出至标准输出；
+
+## 6. httpd的压力测试工具
 市面上常见的 web 压力测试工具有以下几种:
-- ab, webbench, http_load, seige
-- jmeter, loadrunner
-- tcpcopy：网易，复制生产环境中的真实请求，并将之保存下来；
+- 命令行工具: `ab`, `webbench`, `http_load`, `seige`
+- 图形化工具: `jmeter`, `loadrunner`
+- 模拟真实请求: `tcpcopy`，网易开发，复制生产环境中的真实请求，并将之保存下来；
 
 `ab  [OPTIONS]  URL`
+- 全称: apache benchmark
 - 选项:
 	- `-n`：总请求数；
 	- `-c`：模拟的并行数；
 	- `-k`：以持久连接模式 测试；
-	- 附注: `ulimit -n num ` 调整当前用户能同时打开的文件数
+- 附注: `ulimit -n num ` 调整当前用户能同时打开的文件数

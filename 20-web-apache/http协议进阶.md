@@ -75,6 +75,7 @@ http 的首部是形如 `Name: Value`的键值对，可分为:
 - 响应首部
 - 实体首部
 - 扩展首部
+
 ```
 Cache-Control:public, max-age=600
 Connection:keep-alive
