@@ -1,4 +1,4 @@
-# 22.2 MariaDB安装配置
+# 22.2 mysql的安装配置
 上一节我们对关系型数据库和 mariadb 做了一个简单介绍，接下来我们来学习 mariadb 的安装配置
 
 ##  1. Mariadb 配置
@@ -95,7 +95,8 @@ mysql
 ### 2.1 二进制程序包安装
 Centos 6：
 - 准备数据目录；以/mydata/data目录为例；
-- 安装配置mariadb      
+- 安装配置mariadb
+
 ```                
 groupadd -r -g 306 mysql
 useradd  -r  -g 306 -u 306 mysql

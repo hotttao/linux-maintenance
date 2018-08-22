@@ -28,6 +28,16 @@ $ rpm -ql php
 fpm 由 `php-fpm` 包提供
 ```
 $ yum info php-fpm
+$ rpm -ql php-fpm
+/etc/logrotate.d/php-fpm
+/etc/php-fpm.conf       # php-fpm 服务的配置文件
+/etc/php-fpm.d
+/etc/php-fpm.d/www.conf
+/etc/sysconfig/php-fpm
+/run/php-fpm
+/usr/lib/systemd/system/php-fpm.service
+/usr/lib/tmpfiles.d/php-fpm.conf
+/usr/sbin/php-fpm
 ```
 
 ### 1.2 php 相关包
@@ -138,4 +148,95 @@ $ rpm -ql php
     mysql_close();
     phpinfo();
 ?>
+```
+
+## 3. fpm 的 LAMP 安装
+### 3.1 Centos6
+- PHP-5.3.2：默认不支持fpm机制；需要自行打补丁并编译安装；
+- httpd-2.2：默认不支持fcgi协议，需要自行编译此模块；
+- 解决方案：编译安装httpd-2.4, php-5.3.3+；
+
+### 3.2 Centos7
+- httpd-2.4：rpm包默认编译支持了fcgi模块；
+- php-fpm包：专用于将php运行于fpm模式；
+
+#### 安装 msyql
+```
+# 1. 安装 msyql
+yum isntall -y  mariadb-server
+vim /etc/my.cnf.d/server.cnf
+  [mysqld]
+  skip_name_resolve=ON
+  innodb_file_per_table=ON
+
+# 安全初始化
+mysql_secure_installation
+
+# 创建普通登陆用户
+# mysql -uroot -p
+mysql> grant all on testdb.* to 'myuser'@'172.16.0.%' indentified by "mypass"
+
+mysql> flush priviledges
+```
+
+#### 安装 php-fpm
+```
+# 2. 安装 php-fpm，最好不要与 php 包同时安装
+yum install php-fpm php-mysql php-mbstring
+
+$ rpm -ql php-fpm
+/etc/logrotate.d/php-fpm
+/etc/php-fpm.conf
+/etc/php-fpm.d
+/etc/php-fpm.d/www.conf
+
+# 配置 php-fpm
+vim /etc/php-fpm.conf
+vim /etc/php-fpm.d/www.conf
+
+```
+
+#### 配置 httpd
+```
+# 1. 启用httpd的相关模块
+vim /etc/httpd/httpd.conf
+    > LoadModule proxy_module modules/mod_proxy.so
+    > LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so
+
+# 2. 配置虚拟主机支持使用fcgi
+# 在相应的虚拟主机中添加类似如下两行。
+    > ProxyRequests Off
+    > ProxyPassMatch ^/(.*\.php)$ fcgi://127.0.0.1:9000/PATH/TO/DOCUMENT_ROOT/$1
+
+# ProxyRequests Off：关闭正向代理
+# ProxyPassMatch：把以.php结尾的文件请求发送到php-fpm进程，php-fpm至少需要知道运行的目录和URI，所以这里直接在fcgi://127.0.0.1:9000后指明了这两个参数，其它的参数的传递已经被mod_proxy_fcgi.so进行了封装，不需要手动指定。
+
+# 虚拟主机配置示例
+DirectoryIndex index.php
+
+<VirtualHost *:80>
+    ServerName www.b.net
+    DocumentRoot /apps/vhosts/b.net
+    ProxyRequests Off
+    ProxyPassMatch ^/(.*\.php)$  fcgi://127.0.0.1:9000/apps/vhosts/b.net/$1
+
+    <Directory "/apps/vhosts/b.net">
+        Options None
+        AllowOverride None
+        Require all granted
+    </Directory>
+</VirtualHost>  
+
+
+# 3. 让apache能识别php格式的页面，并支持php格式的主页,并支持php格式的主页
+vim /etc/httpd/httpd.conf
+    > AddType application/x-httpd-php  .php
+    > AddType application/x-httpd-php-source  .phps
+    > DirectoryIndex  index.php  index.html
+```
+
+#### 安装 php xcache
+```
+yum install -y php-xcache
+
 ```
