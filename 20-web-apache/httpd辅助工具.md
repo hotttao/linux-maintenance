@@ -116,9 +116,7 @@ Adding password for user pythoner
     - `--limit-rate <rate>`:  设置传输速度
     - `-0/--http1.0`: 使用HTTP 1.0
     - `--tcp-nodelay`: 使用TCP_NODELAY选项
-```
 
-```
 
 ## 5. elinks   
 `elinks  [OPTION]... [URL]...`

@@ -109,6 +109,7 @@
     * [21.2 PHP基础](21-web服务架构LAMP/php基础.md)
     * [21.3 LAMP安装部署](21-web服务架构LAMP/LAMP安装.md)
     * [21.4 LAMP部署示例](21-web服务架构LAMP/LAMP部署示例.md)
+    * [21.5 编译安装lamp-fpm](21-web服务架构LAMP/编译安装lamp-fpm.md)
 * [22. mysql](22-mysql/README.md)
     * [22.1 MariaDB基础](22-mysql/mariadb基础.md)
     * [22.2 MariaDB的安装配置](22-mysql/mariadb的安装配置.md)

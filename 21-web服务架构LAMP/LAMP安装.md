@@ -193,13 +193,27 @@ $ rpm -ql php-fpm
 # 配置 php-fpm
 vim /etc/php-fpm.conf
 vim /etc/php-fpm.d/www.conf
+  pm = static|dynamic
+    # - static：固定数量的子进程；
+    #   - pm.max_children；
+    # - dynamic：子进程数据以动态模式管理；
+    #   - pm.start_servers
+    #   - pm.min_spare_servers
+    #   - pm.max_spare_servers
+    #   - ;pm.max_requests = 500
 
+# 创建session目录，并确保运行php-fpm进程的用户对此目录有读写权限；
+mkdir  /var/lib/php/session
+chown apache.apache /var/lib/php/session
 ```
 
 #### 配置 httpd
 ```
-# 1. 启用httpd的相关模块
-vim /etc/httpd/httpd.conf
+# 1. 确定是否启用httpd的相关模块
+httpd -M|grep proxy_module
+
+# 未启用则启用代理模块
+vim /etc/httpd/httpd.conf  
     > LoadModule proxy_module modules/mod_proxy.so
     > LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so
 
@@ -226,17 +240,13 @@ DirectoryIndex index.php
         Require all granted
     </Directory>
 </VirtualHost>  
-
-
-# 3. 让apache能识别php格式的页面，并支持php格式的主页,并支持php格式的主页
-vim /etc/httpd/httpd.conf
-    > AddType application/x-httpd-php  .php
-    > AddType application/x-httpd-php-source  .phps
-    > DirectoryIndex  index.php  index.html
 ```
 
 #### 安装 php xcache
 ```
 yum install -y php-xcache
 
+$ rpm -ql php-xcache
+/etc/php.d/xcache.ini
+/usr/lib64/php/modules/xcache.so
 ```
