@@ -1,4 +1,4 @@
-# 21.7 httpd 编译安装
+# 21.7 编译安装 lamp-fpm
 
 ## 1. Centos6 编译安装 lamp-fpm
 ### 1.1 编译安装步骤
@@ -230,7 +230,8 @@ vim /etc/php.d/xcache.ini
 
 ### 1.7 php-fpm 配置
 `vim /usr/local/php/etc/php-fpm.conf`
-连接池：pm = static|dynamic
+
+`pm = static|dynamic`
 - static：固定数量的子进程；
     - pm.max_children；
 - dynamic：子进程数据以动态模式管理；

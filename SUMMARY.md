@@ -115,7 +115,6 @@
     * [22.2 MariaDB的安装配置](22-mysql/mariadb的安装配置.md)
     * [22.3 SQL之DDL和DML](22-mysql/sql_DDL_DML.md)
     * [22.4 MariaDB权限管理](22-mysql/MariaDB权限管理.md)
-    * [22.5 php-fpm基础应用与实战](22-mysql/php-fpm基础应用与实战.md)
 * [23. 文件存储共享服务配置与实战](23-文件存储共享服务/README.md)
     * [23.1 文件共享服务和ftp基础入门](23-文件存储共享服务/文件共享服务和ftp基础入门.md)
     * [23.2 vsftpd安装配置与进阶实战](23-文件存储共享服务/vsftpd安装配置与进阶实战.md)
