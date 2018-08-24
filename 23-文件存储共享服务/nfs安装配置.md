@@ -27,8 +27,8 @@ nfs：
         clients：
           single host：ipv4, ipv6, FQDN；
           network：address/netmask， 支持长短格式的掩码；
-          wildcards：主机名通配，例如：*.magedu.com;
-          netgroups：NIS域内的主机组；@group_name；
+          wildcards：主机名通配，例如：`*.magedu.com`;
+          netgroups：NIS域内的主机组；`@group_name`；
           anonymous：使用*通配所有主机；
 
         General Options:
@@ -75,4 +75,3 @@ nfs：
 博客实践作业：
   (1) nfs server导出/data/目录；
   (2) nfs client挂载/data/至本地的/mydata目录；本地的mysqld或mariadb服务的数据目录设置为/mydata, 要求服务能正常启动，且可正常 存储数据；
-  

@@ -52,6 +52,7 @@ $ rpm -ql pam
 ```
 
 ### 1.4 协议实现
+ftp 是 C/S 架构的服务，其服务端与客户端的常见实现有
 1. Server 端：
 	- Windows: Serv-U, IIS, Filezilla
 	- 开源：wuftpd, proftpd, pureftpd, vsftpd(Very Secure FTP daemon), ...
@@ -60,7 +61,7 @@ $ rpm -ql pam
 	- 开源：lftp, ftp, Filezilla, gftp, ...
 
 ## 2. vsftpd 简介
-vsftpd 全称是非常安全的 ftp 服务，以ftp用户的身份运行进程，默认认用户即为ftp用户，匿名用户的默认路径即ftp用户的家目录`/var/ftp`
+vsftpd 全称是非常安全的 ftp 服务，功能有限但是非常安全，是 Linux 上最常用的 ftp 服务的实现。
 
 ```
 rpm -ql vsftpd
@@ -80,7 +81,7 @@ $ rpm -ql vsftpd
 ```
 
 ### 2.1 路经映射
-ftp 也是通过 URL 进行资源定位的 `SCHEME://username:password@HOST:PORT/PATH/TO/FILE`。每个用户的URL的`/`映射到当前用户的家目录。yum 安装 vsftpd 时默认会创建 ftp 用户，匿名访问 ftp 服务时，匿名用户将自动映射为 ftp 用户。匿名用户又可称为 `anonymous`。所以匿名用户的`/` 为 ftp 用户的家目录 `/var/ftp/`。
+ftp 也是通过 URL 进行资源定位的 `SCHEME://username:password@HOST:PORT/PATH/TO/FILE`。每个用户的URL的`/`映射到当前用户的家目录。yum 安装 vsftpd 时默认会创建 ftp 用户，vsftpd 以 ftp 用户的身份启动进程，默认用户即为ftp用户。匿名访问 ftp 服务时，匿名用户将自动映射为 ftp 用户。匿名用户又可称为 `anonymous`。所以匿名用户的`/` 为 ftp 用户的家目录 `/var/ftp/`。
 
 ```
 $ grep "^ftp" /etc/passwd

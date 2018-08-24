@@ -27,6 +27,7 @@ samba：Andrew Tridgell；
     139/tcp, 445/tcp
 
 主配置文件的配置段：
+```
 ~ ]# grep -E -i "#(====| ---)"  /etc/samba/smb.conf
 #======================= Global Settings =====================================
 # ----------------------- Network-Related Options -------------------------
@@ -38,7 +39,7 @@ samba：Andrew Tridgell；
 # --------------------------- Printing Options -----------------------------
 # --------------------------- File System Options ---------------------------
 #============================ Share Definitions ==============================
-
+```
 d:\data\tools：共享，共享名（software）
   servicename:
     //172.18.0.70/software
