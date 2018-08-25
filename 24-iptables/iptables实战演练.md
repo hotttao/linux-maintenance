@@ -1,4 +1,4 @@
-# 24.6 iptables实战演练
+# 24.4 iptables实战演练
 ## 2. 补充
 利用iptables的recent模块来抵御DOS攻击:
 1. 建立一个列表，保存有所有访问过指定的服务的客户端IP
