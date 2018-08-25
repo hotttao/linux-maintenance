@@ -84,34 +84,41 @@ rpm -ql iptables|grep '[[:lower:]]\+\.so$'
 ```        
 
 ## 2. state扩展
-### 2.1 state扩展的功能
-- 作用: 根据”连接追踪机制“去检查连接的状态；
-- conntrack机制：追踪本机上的请求和响应之间的关系；状态有如下几种：
-    - `NEW`：新发出请求；连接追踪模板中不存在此连接的相关信息条目，因此，将其识别为第一次发出的请求；
-    - `ESTABLISHED`：NEW状态之后，连接追踪模板中为其建立的条目失效之前期间内所进行的通信状态；
-    - `RELATED`：相关联的连接；如ftp协议中的数据连接与命令连接之间的关系；
-    - `INVALID`：无效的连接；
-    - `UNTRACKED`：未进行追踪的连接；
+### 2.1 连接追踪
+iptables 的 state 会启动内核的连接追踪机制，即内核在会在内存中记录一段时间内与主机通信过的主机，这样在相应主机再次访问本机时，就能追踪其连接状态。iptables 就能根据”连接追踪机制“去检查连接的状态。连接追踪与通信协议没有任何关系，是内核记录连接状态的一种机制，它有如下几种状态:
+- `NEW`：新发出请求；连接追踪模板中不存在此连接的相关信息条目，因此，将其识别为第一次发出的请求；
+- `ESTABLISHED`：NEW状态之后，连接追踪模板中为其建立的条目失效之前期间内所进行的通信状态；
+- `RELATED`：相关联的连接；如ftp协议中的数据连接与命令连接之间的关系；
+- `INVALID`：无效的连接；
+- `UNTRACKED`：未进行追踪的连接
+
+连接追踪有时长限制，如果一条连接在设置的时长范围内没有再次发生连接，此连接记录就会被删除。下此与对应的主机再次建立连接时就会被当作新连接被重新记录。连接追踪机制非常耗费内容，如果连接追踪占据了所有的内存，新的连接就无法建立，因此不要在连接非常繁忙的反代服务器上开启连接追踪机制。如果一定要开启连接追踪机制，一是要准备足够大的内存，二是调大 `nf_conntrack_max` 的值。
+
+### 2.2 连接追踪相关配置
+内核会在如下文件中记录连接追踪相关的信息:
+1. `/proc/net/nf_conntrack`:
+    - 作用: 已经追踪到并记录下来的连接
+2. `/proc/sys/net/netfilter/nf_conntrack_max`
+    - 作用: 连接追踪功能所能够容纳的最大连接数量的配置文件
+    - 注意: 在一个非常繁忙的服务器上，一是要准备足够大的内存，二是将此配置调大
+3. `/proc/sys/net/netfilter/*timeout*`: 不同的协议的连接追踪时长
+
+### 2.3 state 扩展
+- 作用: 对连接追踪的状态做匹配
 - 参数: `[!] --state state`
 - 配置:
+
 ```    
 > iptables -A INPUT -d 172.16.100.67 -p tcp -m multiport --dports 22,80 -m state --state NEW,ESTABLISHED -j ACCEPT
 > iptables -A OUTPUT -s 172.16.100.67 -p tcp -m multiport --sports 22,80 -m state --state ESTABLISHED -j ACCEPT
 
 > iptables -I OUTPUT -m state --state ESTABLISHED -j ACCEPT
-```          
-### 2.2 state 扩展相关配置
-1. 调整连接追踪功能所能够容纳的最大连接数量：
-    - /proc/sys/net/nf_contrack_max
-    - 在一个非常繁忙的服务器上，一是要准备足够大的内存，二是将此配置调大
-2. 已经追踪到到的并记录下来的连接：
-    - /proc/net/nf_conntrack
-3. 不同的协议的连接追踪时长：
-    - /proc/sys/net/netfilter/
 
-### 2.3 state 扩展相关问题          
-iptables的链接跟踪表最大容量为/proc/sys/net/ipv4/ip_conntrack_max，
-链接碰到各种状态的超时后就会从表中删除；当模板满载时，后续的连接可能会超时
+```          
+
+### 2.4 state 扩展相关问题          
+iptables的链接跟踪表最大容量为`/proc/sys/net/netfilter/nf_conntrack_max`配置的值，
+链接碰到各种状态的超时后就会从表中删除；当内存满载时，后续的连接可能会超时
 解決方法一般有两个：
 1. 加大 nf_conntrack_max 值
 2. 降低 nf_conntrack timeout时间
@@ -131,7 +138,7 @@ net.ipv4.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120
 iptables -t nat -L -n
 ```
 
-### 2.4 如何开放被动模式的ftp服务？
+### 2.5 如何开放被动模式的ftp服务
 1. 装载ftp连接追踪的专用模块：
 2. 放行命令连接(假设Server地址为172.16.100.67)：
 3. 放行数据连接(假设Server地址为172.16.100.67)：
@@ -158,49 +165,86 @@ iptables -t filter -A INPUT -p tcp -d 192.168.1.108 -m multiport --dports 21,22,
 iptable -t filter -A OUTPUT -m --state ESTABLISHED -j ACCEPT
 ```
 
-## 3. iptables 规则优化和自定义
-### 3.1 规则优化：
-服务器端规则设定：任何不允许的访问，应该在请求到达时给予拒绝；
-- 可安全放行所有入站的状态为ESTABLISHED状态的连接；
-- 可安全放行所有出站的状态为ESTABLISHED状态的连接；
-- 谨慎放行入站的新请求
-- 有特殊目的限制访问功能，要于放行规则之前加以拒绝；
+## 3. iptables 规则管理
+### 3.1 规则优化
+我们已经学习了很多 iptables 的扩展模块，有一些通用原则可以帮助我们优化 iptables 的规则
+1. 使用自定义链管理特定应用的相关规则，模块化管理
+2. 可安全放行所有入站的状态为ESTABLISHED状态的连接；
+3. 可安全放行所有出站的状态为ESTABLISHED状态的连接；
+4. 谨慎放行入站的新请求
+5. 有特殊目的限制访问功能，要于放行规则之前加以拒绝；
+6. 载规则的最后自定义默认策略，而不是直接使用 iptables 的默认策略，放置意外将 iptables 规则清空导致 ssh 无法连接至服务器
 
-### 3.2 如何使用自定义链：
-- 自定义链：需要被调用才能生效；自定义链最后需要定义返回规则；
-- 返回规则使用的target叫做RETURN；
+### 3.2 自定义链
+自定义链需要被内置链调用才能生效，且自定义链最后需要定义返回内置链。返回规则使用的处理动作叫做 `RETURN`，默认自定义链最后会自动 return 到调用链，提前返回需要提前显示 return。下面是自定义链的一个示例
 
-### 3.3 规则的保存及重载：
-- 使用iptables命令定义的规则，手动删除之前，其生效期限为kernel存活期限；
-- 保存规则：保存规则至指定的文件：
-    - CentOS 6：
-        - `service  iptables  save` :将规则保存至/etc/sysconfig/iptables文件中；
-        - `iptables-save`  >  /PATH/TO/SOME_RULES_FILE
-    - CentOS 7:
-        - `iptables-save`  >  /PATH/TO/SOME_RULES_FILE
-- 重载规则: 重新载入预存规则文件中规则：            
-    - `iptables-restore` <  /PATH/FROM/SOME_RULES_FILE
-    - CentOS 6：`service  iptables  restart`: 从 /etc/sysconfig/iptables文件中重载规则
+```
+$ iptables -N ping_rule   # 创建自定义链
 
-### 3.4 Centos6 iptables 规则的开机自动载入
-- chkconfig iptables on
-- 脚本文件: `/etc/rc.d/init.d/iptables`
-- 配置文件:
-    - iptables data: `/etc/sysconfig/iptables`
-    - iptables config: `/etc/sysconfig/iptables-config`
-        - 选项: `IPTABLES_MODULE="`  " 配置要装载的模块
-- 自动生效规则文件中的规则：
-    - 用脚本保存各iptables命令；让此脚本开机后自动运行；
-        - /etc/rc.d/rc.local文件中添加脚本路径 --- /PATH/TO/SOME_SCRIPT_FILE
-    - 用规则文件保存各规则，开机时自动载入此规则文件中的规则；
-        - /etc/rc.d/rc.local文件添加： iptables-restore < /PATH/FROM/IPTABLES_RULES_FILE
+# 向自定义链添加规则
+$ iptables -A ping_rule -d 192.168.1.168 -p icmp --icmp-type 8 -j ACCEPT
 
-### 4. CentOS 7 新特性：
-1. 引入了新的iptables前端管理服务工具 firewalld，包括很多管理工具，
-    - firewalld-cmd
-    - firewalld-config
-2. 文档: http://www.ibm.com/developerworks/cn/linux/1507_caojh/index.html
+# 被内置链调用
+$ iptables -A INPUT -d 192.168.1.168 -p icmp -j ping_rule
+$ iptales -L
+```
 
+### 3.3 规则的保存及重载
+使用iptables命令定义的规则，会立刻送往内核，手动删除之前，其生效期限为kernel存活期限。永久保存需要手动保存规则至指定的文件中，需要时可重载保存于文件中的规则。
+
+#### iptables-save
+`iptables-save > path`:
+- 作用: 输出当前的 iptables 规则至终端，保存至文件需要重定向
+
+#### iptables-restore
+`iptables-restore options < path`
+- 作用: 重载文件中的 iptables 规则
+- 选项:
+  - `-n --noflush`: 默认会清除已有规则，此选项表示不清除已有规则，只追加
+  - `-t --test`: 仅分析生成规则集，不提交
+
+```bash
+# 1. 保存规则
+# CentOS 6：
+iptables-save  >  /PATH/TO/SOME_RULES_FILE
+service  iptables  save  # 将规则保存至/etc/sysconfig/iptables文件中；
+
+# CentOS 7:
+iptables-save  >  /PATH/TO/SOME_RULES_FILE
+
+# 2. 重载规则: 重新载入预存规则文件中的规则          
+iptables-restore <  /PATH/FROM/SOME_RULES_FILE
+service  iptables  restart  # 从 /etc/sysconfig/iptables文件中重载规则，仅限于Centos6
+```
+
+### 3.4 iptables 规则开机自动载入
+#### Centos 6
+Centos 中 iptables 是独立的服务，其管理配置如下所示
+```
+# 开机启动 iptables
+chkconfig iptables on
+
+# iptables 服务启动脚本
+/etc/rc.d/init.d/iptables
+
+# iptables 规则的默认配置文件
+/etc/sysconfig/iptables
+
+# iptables 服务的配置文件
+/etc/sysconfig/iptables-config
+  IPTABLES_MODULE="  # 此选项配置要装载的模块
+
+# 开机自动导入可用脚本保存各iptables命令；让此脚本开机后自动运行；
+# 或者载自定义脚本中使用 iptables-restore 重载规则文件即可
+```
+
+#### CentOS 7
+Centos7 引入了新的iptables前端管理服务工具 firewalld，其包括很多管理工具，比如 `firewalld-cmd`，`firewalld-config`。其详细使用方式参见文档: http://www.ibm.com/developerworks/cn/linux/1507_caojh/index.html
+
+所以在 Centos7 中实现规则开机自动载入，可以
+1. 编写 Unit 配置文件通过 systemctl 调用 `iptables-restore` 实现
+2. 借助于 firewalld
+3. 编写脚本，对于 iptables，最好还是使用此种方式，而且最好不要开机自动载入以免产生问题
 
 ### 5. 练习
 练习：INPUT和OUTPUT默认策略为DROP；

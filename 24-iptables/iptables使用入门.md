@@ -218,18 +218,35 @@ Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
 - `ACCEPT`: 接受
 - `DROP`: 丢弃
 - `REJECT`: 拒绝
-- `RETURN`: 返回调用链；
-- `REDIRECT`: 端口重定向；
-- `LOG`: 记录日志；
-- `MARK`: 做防火墙标记；
-- `DNAT`: 目标地址转换；
-- `SNAT`: 源地址转换；
-- `MASQUERADE`: 地址伪装；
+- `RETURN`: 返回调用链
+- `REDIRECT`: 端口重定向
+- `LOG`: 记录日志
+- `MARK`: 做防火墙标记
+- `DNAT`: 目标地址转换
+- `SNAT`: 源地址转换
+- `MASQUERADE`: 地址伪装
 - 自定义链: 由自定义链上的规则进行匹配检查
 - ......                    
 
+#### REJECT
+`REJECT --reject-with`
+- `--reject-with`
+  - 设置拒绝连接的原因
+  - 可选值: `icmp6-no-route, no-route, icmp6-adm-prohibited, adm-prohibited, icmp6-addr-unreachable,  addr-unreach,  or icmp6-port-unreachable`, 默认为 `icmp-port-unreach‐able`
 
-### 课后作业：
-开放本机web服务器给非192.168.0.0/24网络中的主机访问；
-禁止本机被非172.16.0.0/16网络中的主机进行ping请求；
-开放本机的dns服务给所有主机；
+#### LOG
+`LOG options`
+- 作用: 记录日志，默认日志保存于 `/var/log/messages`
+- 选项:
+  - `--log-level`: 记录的日志级别
+  - `--log-prefix`: 在日志前增加的前缀
+
+```
+# 记录 telnet 连接
+$ iptables -I INPUT -d 192.168.1.168 -p tcp --dport 23 -m state --state NEW -j LOG
+```
+
+### 课后作业
+开放本机web服务器给非192.168.0.0/24网络中的主机访问
+禁止本机被非172.16.0.0/16网络中的主机进行ping请求
+开放本机的dns服务给所有主机
