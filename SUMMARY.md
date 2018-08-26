@@ -125,7 +125,7 @@
     * [24.1 Linux防火墙理论基础](24-iptables/Linux防火墙理论基础.md)
     * [24.2 iptables命令管理入门](24-iptables/iptables使用入门.md)
     * [24.3 iptables扩展匹配](24-iptables/iptables扩展匹配.md)
-    * [24.4 iptables实战演练](24-iptables/iptables实战演练.md)
+    * [24.4 网络防火墙配置](24-iptables/网络防火墙配置.md)
     * [24.5 nat路由高级实战进阶](24-iptables/nat路由.md)
     * [24.6 tcp 协议简述](24-iptables/tcp_protocol.md)
 * [25. Linux日志管理、时钟服务、sudo](25-Linux日志-时钟服务-sudo/README.md)
