@@ -131,7 +131,7 @@
 * [25. Linux日志管理、时钟服务、sudo](25-Linux日志-时钟服务-sudo/README.md)
     * [25.1 Linux时间服务-chrony](25-Linux日志-时钟服务-sudo/Linux时间服务-chrony.md)
     * [25.2 日志管理系统rsyslog](25-Linux日志-时钟服务-sudo/日志管理系统rsyslog.md)
-    * [25.3 sudo应用与实战](25-Linux日志-时钟服务-sudo/sudo应用与实战.md)
+    * [25.3 sudo](25-Linux日志-时钟服务-sudo/sudo.md)
 * [26. nginx入门及企业实战应用](26-nginx/README.md)
     * [26.1 http服务及IO事件模型讲解](26-nginx/http服务及IO事件模型讲解.md)
     * [26.2 nginx基础入门](26-nginx/nginx基础入门.md)
