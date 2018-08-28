@@ -128,6 +128,7 @@
     * [24.4 网络防火墙配置](24-iptables/网络防火墙配置.md)
     * [24.5 nat路由高级实战进阶](24-iptables/nat路由.md)
     * [24.6 tcp 协议简述](24-iptables/tcp_protocol.md)
+    * [24.7 虚拟网卡类型](24-iptables/虚拟网卡类型.md)
 * [25. Linux日志管理、时钟服务、sudo](25-Linux日志-时钟服务-sudo/README.md)
     * [25.1 Linux时间服务-chrony](25-Linux日志-时钟服务-sudo/Linux时间服务-chrony.md)
     * [25.2 日志管理系统rsyslog](25-Linux日志-时钟服务-sudo/日志管理系统rsyslog.md)

@@ -6,6 +6,8 @@
 4. iptables nat 的实现
 
 ## 1. 源地址转换
+![network](../images/23/snat_picture.png)
+
 ![network](../images/23/snat_net.jpg)
 
 ![network](../images/23/snat_requets.jpg)
