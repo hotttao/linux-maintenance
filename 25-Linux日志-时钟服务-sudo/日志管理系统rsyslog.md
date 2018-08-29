@@ -191,7 +191,8 @@ $ sudo vim /etc/rsyslog.conf
 $ModLoad  ommysql
 
 #### RULES ####
-facility.priority 		:ommysql:DBHOST,DB,DBUSER,DBUSERPASS
+# facility.priority 		:ommysql:DBHOST,DB,DBUSER,DBUSERPASS
+facility.priority 		:ommysql:127.0.0.1,Syslog,rsyslog,rsyspass
 
 # 重启rsyslog服务
 $ sudo systemctl restart rsyslog
