@@ -113,6 +113,8 @@ mkdir -pv /var/tmp/nginx/{client,proxy,fastcgi,uwsgi}
 
 # 3. 启动 nginx
 /usr/local/nginx/sbin/nginx
+
+# 4. 可以仿照 rpm 安装时生成的 unit file 为编译安装创建一个服务管理脚本
 ```
 
 ### 2.3 nginx 主程序使用
@@ -150,13 +152,38 @@ nginx 的主程序 `nginx`, 位于 `/usr/sbin/nginx`，其使用方式如下:
 
 ### 3.1 配置文件结构
 nginx 配置参数由下面三个部分组成
+```
+###### main 配置段 ######
+user nginx;
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+
+###### http 配置段 ######
+http {
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    include /etc/nginx/conf.d/*.conf;
+    server {
+        listen       80 default_server;
+        listen       [::]:80 default_server;
+        server_name  _;
+        root         /usr/share/nginx/html;
+    }
+```
+
 1. main配置段: 基本核心配置，包括
     - 用于调试、定位问题
     - 正常运行的必备配置
     - 优化性能的配置
     - 事件类的配置
-2. http配置段: 配置 nginx web server
-3.
+2. http 配置段: 配置 nginx web server
+3. mail 配置段
 
 ### 3.2 配置文件语法
 ```
