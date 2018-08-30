@@ -22,6 +22,14 @@ user username [groupname];
 pid /path/to/pidfile_name;
 # 指定nginx的pid文件
 
+include file | mask;
+# eg: include /etc/nginx/conf.d/*.conf;
+# 指明包含进来的其它配置文件片断,mask 表示支持通配符；
+
+load_module file;
+# load_module "/usr/lib64/nginx/modules/ngx_stream_module.so";
+# 指明要装载的动态模块；
+
 worker_rlimit_nofile n;
 # 指定所有worker进程所能够打开的最大文件句柄数；
 
@@ -31,14 +39,13 @@ worker_rlimit_sigpending n;
 
 ### 1.2 优化性能相关的配置：
 ```
-
 worker_processes n;
-# worker进程的个数；通常其数值应该为CPU的物理核心数减1；
-worker_processes auto; # nginx 将根据 cpu 数量自动选择 worker 进程数
-
+# worker进程的个数；通常其数值应该小于或等于CPU的物理核心数；
+worker_processes auto;
+# nginx 将根据 cpu 数量自动选择 worker 进程数
 
 worker_cpu_affinity cpumask ...;
-# 作用: 提升缓存命中率
+# 作用: 对 worker 进程进行 CPU 绑定，用于提升缓存命中率
 # eg:
 #    worker_processes 6;
 #    worker_cpu_affinity 00000001 00000010 00000100 00001000 00010000 00100000;

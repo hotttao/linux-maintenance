@@ -24,20 +24,27 @@ http配置段的框架如下所示，其遵循以下一些原则
 
 ```        
 http {
-    upstream {  # 配置反向代理
+    sendfile            on; # 各server的公共配置
+    tcp_nopush          on;
+    ...：
+
+    upstream {              # 配置反向代理
     ......
     }
 
     server {    # 定义一个虚拟主机；nginx支持使用基于主机名或IP的虚拟主机
                 # 每个 server 类似于 httpd 中的一个 <virtualHost>
-        location URL {  
-            root  "/path"
-        }
-        location URL {  # 类似 http 中的 <location>, 用于定义URL与本地文件系统的关系
-            if  .... {
-                ....
-            }
-        }
+          listen;
+          server_name;
+          root;
+          alias;
+
+          # 类似 http 中的 <location>, 用于定义URL与本地文件系统的关系
+          location URL {  
+              if  .... {
+                  ....
+              }
+          }
     }
     server {
 
@@ -268,6 +275,7 @@ stub_status {on|off};
 ### 2.5  url 重写与自定义日志
 2. rewrite: url 重写
 3. log_format: 自定义日志格式
+
 ```
 location / {
     rewriter ^/bbs/(.*)$  /forum/$1 break;
@@ -297,6 +305,7 @@ access_log  logs/access.log  format_name;
 
 ### 3. https 服务配置
 生成私钥，生成证书签名请求，并获得证书
+
 ```
 serve {
     listen 443 ssh;

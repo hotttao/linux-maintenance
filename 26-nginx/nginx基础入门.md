@@ -11,7 +11,7 @@
 ngnix 架构如上图所示:
 1. Master 进程:
   - 作用: 主控进程负责生成和管理 Worker 进程
-  - 特性: 支持动态加载配置文件，非停机更新
+  - 特性: 支持动态加载配置文件，平滑升级
 2. Worker:
   - 作用:
     - 作为 web 服务，Worker 进程负责接收和处理用户请求
@@ -24,12 +24,13 @@ ngnix 架构如上图所示:
   - 作用: 支持本地缓存，Cache Loader 缓存加载，Cache manager 缓存管理
   - 特性: 支持 AIO，senfile，mmap 拥有高效的磁盘 IO
 
-nginx 高度模块化，模块可分为:
-- 核心模块
-- 标准http模块
-- 可选的http模块
-- 邮件模块
-- 第三方扩展模块
+nginx 高度模块化，但其模块早期不支持DSO机制；近期版本支持动态装载和卸载.模块可分为:
+- 核心模块: core module
+- 标准http模块: Optional HTTP modules
+- 可选的http模块: Standard HTTP modules
+- 邮件模块: Mail modules
+- 传输层代理模块:Stream modules
+- 第三方模块
 
 ### 1.2 nginx 功用
 nginx 可实现如下功能:
@@ -93,8 +94,8 @@ $ rpm -ql nginx
 ```bash
 # 1. 编译环境准备
 yum grouplist
-yum groupinstall "Development"  
-yum install pcre-devel
+yum groupinstall "Development Tools"  
+yum install pcre-devel zlib-devel
 yum install openssl openssl-devel  
 
 # 2. 编译安装
@@ -106,7 +107,7 @@ cd nginx-1.14.0
 groupadd -r nginx
 useradd -g nginx -r nginx
 
-./configure  --prefix=/usr/local/nginx  --conf-path=/etc/nginx/nginx.conf  --user=nginx  --group=nginx  --error-log-path=/var/log/nginx/error.log  --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx/nginx.pid  --lock-path=/var/lock/nginx.lock --with-http_ssl_module  --with-http_stub_status_module --with-http_gzip_static_module  --with-http_flv_module --with-http_mp4_module --http-client-body-temp-path=/var/tmp/nginx/client  --http-proxy-temp-path=/var/tmp/nginx/proxy --http-fastcgi-temp-path=/var/tmp/nginx/fastcgi  --http-uwsgi-temp-path=/var/tmp/nginx/uwsgi
+./configure --prefix=/usr/local/nginx --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --user=nginx --group=nginx --with-http_ssl_module --with-http_v2_module --with-http_dav_module --with-http_stub_status_module --with-threads --with-file-aio
 
 make && make install
 mkdir -pv /var/tmp/nginx/{client,proxy,fastcgi,uwsgi}
@@ -151,30 +152,28 @@ nginx 的主程序 `nginx`, 位于 `/usr/sbin/nginx`，其使用方式如下:
 ```
 
 ### 3.1 配置文件结构
-nginx 配置参数由下面三个部分组成
+nginx 配置参数由下面四个个部分组成
 ```
 ###### main 配置段 ######
-user nginx;
-# Load dynamic modules. See /usr/share/nginx/README.dynamic.
-include /usr/share/nginx/modules/*.conf;
-
-events {
-    worker_connections 1024;
-}
-
+main block：主配置段，也即全局配置段；
+  event {
+    ...
+  }：事件驱动相关的配置；
 
 ###### http 配置段 ######
 http {
-    include             /etc/nginx/mime.types;
-    default_type        application/octet-stream;
+  ...
+}：http/https 协议相关的配置段；
 
-    include /etc/nginx/conf.d/*.conf;
-    server {
-        listen       80 default_server;
-        listen       [::]:80 default_server;
-        server_name  _;
-        root         /usr/share/nginx/html;
-    }
+###### mail 配置段 ######
+mail {
+  ...
+}
+
+###### 传输层代理段 ######
+stream {
+  ...
+}
 ```
 
 1. main配置段: 基本核心配置，包括
@@ -183,7 +182,7 @@ http {
     - 优化性能的配置
     - 事件类的配置
 2. http 配置段: 配置 nginx web server
-3. mail 配置段
+3. mail 配置段: 通常没什么用
 
 ### 3.2 配置文件语法
 ```
@@ -194,6 +193,7 @@ pid /run/nginx.pid;
 ```
 nginx 由如下语法要求:
 1. 语法格式: `directive value1  [value2....];` 必需以分号结尾
-2. 支持使用变量
+2. 支持使用变量，自定义变量可以覆盖内置变量的值
     - 内置变量: [nginx 内置变量索引](http://nginx.org/en/docs/varindex.html)
     - 自定义变量: `set var_name value`
+    - 变量引用: `$variable_name`
