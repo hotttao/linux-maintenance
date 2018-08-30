@@ -52,7 +52,7 @@ yum 源的配置文件中有一些可用变量，可以方便根据当前平台�
 
 |变量名称|作用|
 |:---|:---|
-|$releasever|当前OS的发行版的主版本号，即 centos-release 这个 rpm 包的 Version值<br> 通过 `rpm -qi centos-releae` 可查看 |
+|$releasever|当前OS的发行版的主版本号，即 centos-release 这个 rpm 包的 Version值<br> 通过 `rpm -qi centos-release` 可查看 |
 |$arch|平台，比如 i386，x86, x86_64，通过 `arch` 命令可查看当前值|
 |$basearch|基础平台，平台分类中的大类，比如 i386，i568，x86都属于 i386|
 |$YUM0-$YUM9|用户可自定义使用的变量|

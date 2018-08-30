@@ -29,8 +29,8 @@
 
 1. 同步阻塞
 2. 同步非阻塞
-3. IO复用：select(), poll():
-4. 事件驱动I/O
+3. IO复用(事件驱动IO)：select, poll，epoll:
+4. 信号驱动I/O
 5. 异步IO
 
 参考连接:
