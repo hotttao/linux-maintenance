@@ -29,12 +29,6 @@ include file | mask;
 load_module file;
 # load_module "/usr/lib64/nginx/modules/ngx_stream_module.so";
 # 指明要装载的动态模块；
-
-worker_rlimit_nofile n;
-# 指定所有worker进程所能够打开的最大文件句柄数；
-
-worker_rlimit_sigpending n;
-# 设定每个用户能够发往worker进程的信号的数量；
 ```
 
 ### 1.2 优化性能相关的配置：
@@ -46,11 +40,20 @@ worker_processes auto;
 
 worker_cpu_affinity cpumask ...;
 # 作用: 对 worker 进程进行 CPU 绑定，用于提升缓存命中率
+       只有在系统上不存在其他耗费资源的进程时才建议开启
 # eg:
 #    worker_processes 6;
 #    worker_cpu_affinity 00000001 00000010 00000100 00001000 00010000 00100000;
-worker_cpu_affinity  auto;  # nginx 将根据 cpu 数量自动配置
+worker_cpu_affinity  auto;  # nginx 将根据 cpu 数量自动绑定
 
+worker_priority nice;
+# 作用: 指明 work 进程的 nice 值,  -20,19之间的值
+
+worker_rlimit_nofile n;
+# 指定所有worker进程所能够打开的最大文件句柄数；
+
+worker_rlimit_sigpending n;
+# 设定每个用户能够发往worker进程的信号的数量；
 
 ssl_engine device;  
 # 在存在ssl硬件加速器的服务器上，指定所使用的ssl硬件加速设备；
@@ -60,13 +63,18 @@ timer_resolution t
 #    每次内核事件调用返回时，都会使用gettimeofday()来更新nginx缓存时钟；
 #    timer_resolution用于定义每隔多久才会由gettimeofday()更新一次缓存时钟；
 #    x86-64系统上，gettimeofday()代价已经很小，可以忽略此配置；
-
-worker_priority nice;
-# 作用: 指明 work 进程的 nice 值,  -20,19之间的值
 ```
 
 ### 1.3 事件相关的配置
+此配置位于 `events {}` 配置段内
+
 ```
+work_connections  nums
+# 设定单个 worker 进程能处理的最大并发连接数量, 尽可能大，以避免成为限制，eg: 51200
+
+use [epoll|rtsig|select|poll]
+# 作用: 指明使用的IO模型，建议让Nginx 自动选择
+
 accept_mutex [on|off]
 # 作用: 是否打开Ningx的负载均衡锁；
 # 功能:
@@ -81,13 +89,6 @@ accept_mutex_delay ms;
 
 lock_file /path/to/lock_file;
 # 作用: accept_mutex 用到的lock文件路径
-
-
-use [epoll|rtsig|select|poll]
-# 作用: 指明使用的IO模型，建议让Nginx 自动选择
-
-work_connections  nums
-# 设定单个 worker 进程能处理的最大并发连接数量, 尽可能大，以避免成为限制，eg: 51200
 
 multi_accept on|off;
 # 作用: 是否允许一次性地响应多个用户请求；默认为Off;

@@ -5,7 +5,8 @@
   - 内置变量
   - if 上下文
 2. http 基础配置
-  - 基本属性和访问路径配置
+  - 虚拟主机定义
+  - 访问路径配置
   - 索引及错误页配置
   - 访问控制
   - 开启状态页
@@ -115,54 +116,66 @@ location ~* \.(jpg|gif|jpeg) {
 ```
 
 ## 2. http 服务配置
-### 2.1 基本属性和访问路径配置
+nginx 中所有路经都是 uri，nginx 会按照配置的 uri，按照当前配置文件重新查找一次，以找到匹配的文件。
+### 2.1 虚拟主机定义
 ```    
 server {
-    listen 8080;
+    listen 8080 default_server;
     server_name www.httttao.com;
     root "/vhost/web/";
-    default_server
 }
 # 作用: 定义一个虚拟主机
 # 特性: nginx支持使用基于主机名或IP的虚拟主机
 
 
-listen  address[:port];
-listen  port;
+listen PORT|address[:port]|unix:/PATH/TO/SOCKET_FILE
+listen address[:port] [default_server] [ssl] [http2 | spdy]  
+       [backlog=number] [rcvbuf=size] [sndbuf=size]  
 # 作用: 指定监听的地址和端口
-
+# 参数:
+#     default_server：设定为默认虚拟主机；
+#     ssl：限制仅能够通过ssl连接提供服务；
+#     backlog=number：后援队列长度；
+#     rcvbuf=size：接收缓冲区大小；
+#     sndbuf=size：发送缓冲区大小；
 
 server_name [...];
-# 作用: server_name可以跟多个主机名，名称中可以使用通配符和正则表达式(通常以~开头)
+# 作用: 指明虚拟主机的主机名称；后可跟多个由空白字符分隔的字符串；
 # 过程: 当nginx收到一个请求时，会取出其首部的server的值，而后跟众server_name进行比较，
-# 主机名比较顺序如下：
+#      * 匹配任意长度字符串
+#      ~ 正则表达式模式匹配
+# 主机名匹配顺序如下：
 #    先做精确匹配；www.magedu.com
 #    左侧通配符匹配；*.magedu.com
-#    右侧通配符匹配；www.abc.com, www.*
+#    右侧通配符匹配；www.abc.com, www.*    
 #    正则表达式匹配: ~^.*\.magedu\.com\$
-#    default_server
-
-
-default_server：
-# 作用: 定义此server为http中默认的server
-# 附注: 如果所有的server中没有任何一个listen使用此参数，那么第一个server即为默认server
-
 
 server_name_hash_bucket_size 32|64|128;
-# 作用: 为了实现快速主机查找，nginx使用hash表来保存主机名；                
+# 作用: 为了实现快速主机查找，nginx使用hash表来保存主机名；   
 
+tcp_nodelay on|off;
+# 在keepalived模式下的连接是否启用TCP_NODELAY选项，建议启用；
 
+tcp_nopush on|off;
+# 在sendfile模式下，是否启用TCP_CORK选项，建议启用；
+
+sendfile on | off;
+# 是否启用sendfile功能，建议启用；             
+```
+
+### 2.2 访问路径配置
+```
 root path
 # 作用:
 #    设置资源路径映射
 #    用于指明请求的 URL 所对应的资源所在的文件系统上的起始路径
-
+# 位置：http, server, location, if in location；
 
 alias path
 # 作用: 只能用于location中，定义路径别名；
 # 对比:
 #    root path 用于替换 location URL 中 URL 最左侧的 "/"
-#    alias path 用于替换 location URL 中所有的URL
+#    alias path 用于替换 location URL 中 URL 最右侧的 "/"
 location /image {
     root '/vhost/web1''
 }
@@ -173,17 +186,18 @@ location /imapge {
 }
 http://www.tao.com/images/a.jpg ---> /www/pictures/a.jpg
 
-####################
+########################################
 location [ = | ~ | ~* | ^~ ] uri { ... }
 location @name { ... }
 # 功能：
 #    允许根据用户请求的URI来匹配指定的各location以进行访问配置；
-#    匹配到时，将被location块中的配置所处理；
+#    url被匹配到时，将被location块中的配置所处理；
 # 匹配类型
 #      =：精确匹配；
 #      ~：正则表达式模式匹配，匹配时区分字符大小写
 #      ~*：正则表达式模式匹配，匹配时忽略字符大小写
 #      ^~: URI前半部分匹配，不检查正则表达式
+#      不带符号：匹配起始于此uri的所有的url；
 # 匹配优先级：精确匹配(=) ^~  ~  ~*  不带任何符号的 location
 http {
     server {
@@ -206,15 +220,20 @@ http {
 
 ### 2.2 索引及错误页配置
 ```
-index file ...;
+index uri ...;
 # 作用: 定义默认页面，可参跟多个值；
+# 说明: 这里 uri 与 root，文件系统没有任何关系，
+#      nginx 会按照当前配置的匹配逻辑，找到 uri 的位置
 
 error_page code ... [=code] uri | @name;
 # 作用:
 #    错误页面重定向
 #    根据 http 响应状态码来指明特用的错误页面
 # [=code]: 以指明的响应吗进行响应，而是默认的原来的响应
-# eg: error_page  404 /404_customed.html
+error_page   500 502 503 504  =200 /50x.html;
+location = /50x.html {
+    root   html;
+}
 
 try_files path1 [path2 ...] uri;
 # 作用:
