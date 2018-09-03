@@ -195,5 +195,5 @@ nginx 由如下语法要求:
 1. 语法格式: `directive value1  [value2....];` 必需以分号结尾
 2. 支持使用变量，自定义变量可以覆盖内置变量的值
     - 内置变量: [nginx 内置变量索引](http://nginx.org/en/docs/varindex.html)
-    - 自定义变量: `set var_name value`
+    - 自定义变量: `set $var_name value`
     - 变量引用: `$variable_name`

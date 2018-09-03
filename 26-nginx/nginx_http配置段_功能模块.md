@@ -62,23 +62,66 @@ stub_status {on|off};
 模块: `ngx_http_rewrite_module` 模块
 
 ```
-location / {
-    rewriter ^/bbs/(.*)$  /forum/$1 break;
-    rewriter ^/bbs/(.*)$  https://www.tao.com/$1 redirect;  
-}
 rewrite  regex  replacement flag;
 # 作用: url 重写
 # eg: rewrite  ^/images/(.*\.jpg)$  /imgs/$1 break;
 # flag:
-#    last:
+#    last: 默认
 #        一旦被当前规则匹配并重写后立即停止检查后续的其它rewrite的规则，
-#        而后通过重写后的规则重新发起请求,并从头开始执行 rewriter 检查；
+#        然后用重写后的规则再从头开始执行 rewriter 检查；
 #    break:
-        一旦被当前规则匹配并重写后立即停止后续的其它rewrite的规则，
-        而后通过重写后的规则重新发起请求
-        且不会被当前的location 内的任何 rewriter 规则所检查；
+#        一旦被当前规则匹配并重写后立即停止后续的其它rewrite的规则，
+#        而后通过重写后的规则重新发起请求
+#        且不会被当前的location 内的任何 rewriter 规则所检查；
 #    redirect: 以302临时重定向返回新的URL；
 #    permanent: 以301永久重定向返回新的URL；
+# 说明:
+#     last,break 只会发生在 nginx 内部，不会与客户端交互，客户端收到的是正常的响应
+#     redict, permanent 则是直接返回 30x 响应，跨站重写必需使用 redirect或permanent
+#     如果 last 发生死循环，nginx 会在循环 10 此之后返回 50x 响应
+
+return code [text];
+return code URL;
+return URL;
+# 作用: 停止进程并返回特定的响应给客户端，非标准的 444 将直接关闭链接，且不会发送响应
+
+rewrite_log on | off;
+# 作用: 是否开启重写日志；
+
+# 示例
+server {
+    ...
+    rewrite ^(/download/.*)/media/(.*)\..*$ $1/mp3/$2.mp3 last;
+    rewrite ^(/download/.*)/audio/(.*)\..*$ $1/mp3/$2.ra  last;
+    return  403;
+    ...
+}
+
+location / {
+    rewriter ^/bbs/(.*)$  /forum/$1 break;
+    rewriter ^/bbs/(.*)$  https://www.tao.com/$1 redirect; # http --> https  
+}
+
+
+if ($http_user_agent ~ MSIE) {
+    rewrite ^(.*)$ /msie/$1 break;
+}
+
+if ($http_cookie ~* "id=([^;]+)(?:;|$)") {
+    set $id $1;
+}
+
+if ($request_method = POST) {
+    return 405;
+}
+
+if ($slow) {
+    limit_rate 10k;
+}
+
+if ($invalid_referer) {
+    return 403;
+}
 ```
 
 ### 1.4 日志配置
@@ -146,37 +189,66 @@ gzip_types text/xml text/css  application/javascript;
 ```
 
 ### 2. https 服务配置
-生成私钥，生成证书签名请求，并获得证书
-
+模块: ngx_http_ssl_module模块
 ```
-serve {
-    listen 443 ssh;
-    server_name www.htttao.com;
+ssl on | off;
+# 作用: 是否 ssl
 
-    ssl_certificate  /etc/nginx/ssl/nginx.crt;
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;
+ssl_certificate file;
+# 作用: 当前虚拟主机使用PEM格式的证书文件；
 
-    ssl_session_cache  shared:SSL:1m;
-    ssl_session_timeout  5m;
+ssl_certificate_key file;
+# 作用:当前虚拟主机上与其证书匹配的私钥文件；
 
-    ssl_ciphers HIGH:!aNULLL:!MD5;
-    ssl_prefer_server_ciphers on;
+ssl_protocols [SSLv2] [SSLv3] [TLSv1] [TLSv1.1] [TLSv1.2];
+# 作用: 支持ssl协议版本，默认为后三个；
 
-    location / {
-        root /vhost/web/;
-        index index.html index.htm;
-    }
-}
-```
+ssl_session_cache off | none | [builtin[:size]] [shared:name:size];
+# 作用: 是否缓存 sll 会话
+# 选项:
+#     builtin[:size]：使用OpenSSL内建的缓存，此缓存为每worker进程私有；
+#     [shared:name:size]：在各worker之间使用一个共享的缓存；
+# 说明: 如果用户请求被不同的 worker 处理时，私有缓存可能时效，因此应该使用公共缓存
 
-## 3. fastcgi 配置
-```
+ssl_session_timeout time;
+# 作用: 客户端一侧的连接可以复用ssl session cache中缓存 的ssl参数的有效时长；
+
 server {
-    location ~ \.php$ {
-        fastcgi_pass  127.0.0.1:9000;
-        fastcgi_pindex index.php;
-        fastcgi_param SCRIPT_FILENAME  /scripts$fastcgi_script_name;
-        include fastcgi_params;      
-    }
+  listen 443 ssl;
+  server_name www.magedu.com;
+  root /vhosts/ssl/htdocs;
+  ssl on;
+  ssl_certificate /etc/nginx/ssl/nginx.crt;
+  ssl_certificate_key /etc/nginx/ssl/nginx.key;
+  ssl_session_cache shared:sslcache:20m;  # 1m 空间大约能缓存 4000 个会话
+}							
+```
+
+## 3. 防盗链
+模块: ngx_http_referer_module模块
+
+```
+valid_referers none | blocked | server_names | string ...;
+# 作用: 定义referer首部的合法可用值；
+# 参数:     
+#    none：请求报文首部没有referer首部；
+#    blocked：请求报文的referer首部没有值；
+#    server_names：参数，其可以有值作为主机名或主机名模式；
+#    arbitrary_string：直接字符串，但可使用*作通配符；
+#    regular expression：被指定的正则表达式模式匹配到的字符串；要使用~打头，例如 ~.*\.magedu\.com；
+
+$invalid_referer
+# 作用: 内置的变量，表示当前请求 referer首部是否不符合 valid_referers 定义的规则
+
+    
+#配置示例：
+valid_referers none block server_names *.magedu.com *.mageedu.com magedu.* mageedu.* ~\.magedu\.;
+
+if($invalid_referer) {
+   return http://www.magedu.com/invalid.jpg;
 }
+
+valid_referers none blocked server_names
+               *.example.com example.* www.example.org/galleries/
+               ~\.google\.;
 ```

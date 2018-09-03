@@ -103,14 +103,6 @@ server {
         rewrite ^(.*)$ /mise/$1 break;
     }
 }
-
-# 防盗链
-location ~* \.(jpg|gif|jpeg) {
-    valid_referer  none blocked  www.httttao.com;
-    if ($invalid_referer) {
-        rewrite ^/  http://www.hotttao.com/403.html;
-    }
-}
 ```
 
 ## 2. http 服务配置
