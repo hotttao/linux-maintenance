@@ -1,5 +1,5 @@
-# 26.5 nginx_http配置段()其他模块)
-本节是 nginx http 配置的第三部分。上一节我们讲解了 `http_core_codule` 提供的配置指令，本节我们来讲解 nginx http 配置段的功能模块，内容包括:
+# 26.5 nginx_http配置段(功能模块)
+本节是 nginx http 配置的第三部分。上一节我们讲解了 `http_core_codule` 提供的配置指令，本节我们来讲解 http 的各种功能模块提供的配置指令，内容包括:
 1. 功能模块
   - 访问控制
   - 开启状态页
@@ -34,7 +34,7 @@ htpasswd -c -m /path/user/.passwd tom
 ```
 
 ### 1.2 开启状态页
-模块: ngx_http_stub_status_module模块
+模块: `ngx_http_stub_status_module` 模块
 
 ```
 location /status {
@@ -59,8 +59,7 @@ stub_status {on|off};
 ```
 
 ### 1.3 url 重写与自定义日志
-2. rewrite: url 重写
-3. log_format: 自定义日志格式
+模块: `ngx_http_rewrite_module` 模块
 
 ```
 location / {
@@ -80,17 +79,10 @@ rewrite  regex  replacement flag;
         且不会被当前的location 内的任何 rewriter 规则所检查；
 #    redirect: 以302临时重定向返回新的URL；
 #    permanent: 以301永久重定向返回新的URL；
-
-
-log_format format_name  "$remote_addr"
-# 作用: 自定义日志格式
-# format_name: 自定义格式的格式名
-access_log  logs/access.log  format_name;
-# 作用: 使用自定义格式记录日志
 ```
 
 ### 1.4 日志配置
-模块: ngx_http_log_module模块
+模块: `ngx_http_log_module` 模块
 
 ```
 log_format name string ...;
