@@ -105,9 +105,9 @@ RULES 用于定义 facility 记录日志的级别和位置，其语法为
 `facilty.priority 	target`
 - `priority`: 日志级别，有如下几种表示方式
   - `*`：所有级别；
-	- `none`：没有级别；
-	- `priority`：此级别以高于此级别的所有级别；
-	- `=priorty`：仅此级别
+  - `none`：没有级别；
+  - `priority`：此级别以高于此级别的所有级别；
+  - `=priorty`：仅此级别
 - `target`: 日志输出的位置，有如下几种格式
   - `/var/log/messages`: 记录到特定文件中，默认为同步写入，大量日志记录会拖慢系统性能
   - `-/var/log/maillog`: 记录到文件，`-` 表示异步写入，不重要的日志可异步写入，减少系统 IO

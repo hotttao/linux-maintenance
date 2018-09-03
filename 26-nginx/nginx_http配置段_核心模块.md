@@ -1,5 +1,5 @@
-# 26.4 nginx http 配置段
-本节我们来讲解 http 配置的第二部分，http 配置段的配置。http 配置段由 `ngx_http_core_codule` 模块所引入，用于配置 ngnix 的 web 服务器。nginx 没有中心主机的概念，所以 web 服务包括默认的都是虚拟主机，直接支持基于ip，端口和主机名的虚拟主机。我们将按照如下顺序讲解 http 配置:
+# 26.4 nginx_http配置段(核心模块)
+本节我们来讲解 http 配置的第二部分，http 配置段的配置。nginx 没有中心主机的概念，所以 web 服务包括默认的都是虚拟主机，直接支持基于ip，端口和主机名的虚拟主机。http 配置段用于配置 ngnix 的 web 服务器，由`ngx_http_core_codule` 和其他众多的 http 功能模块组成。本节我们首先来讲解 `http_core_codule` 提供的配置指令，内容包括
 1. http 配置段简介
   - 配置框架
   - 内置变量
@@ -8,13 +8,11 @@
   - 虚拟主机定义
   - 访问路径配置
   - 索引及错误页配置
-  - 访问控制
-  - 开启状态页
-  - url重写和自定义日志格式
-3. https 服务配置
-4. fastcgi 配置
-
-限于篇幅，有关 ngnix http 的高级配置我们放在一下节来讲解。
+  - 网络连接相关的设置
+  - 客户端请求的限制
+  - 文件操作的优化
+  - 客户端请求的特殊处理
+  - 内存及磁盘资源分配
 
 ## 1. http 配置段简介
 ### 1.1 http 配置段框架
@@ -250,110 +248,142 @@ try_files path1 [path2 ...] uri;
 # http://www.magedu.com/temp.html
 ```
 
-### 2.3 访问控制
+
+## 2.3 网络连接相关的设置
 ```
-allow IP/Network;
-deny IP/Netword;
-# 作用: 基于 ip 的访问控制, all 表示所有
+keepalive_timeout time;
+# 保持连接的超时时长；默认为75秒；
 
+keepalive_requests n;
+# 在一次长连接上允许承载的最大请求数；
 
-auth_basic
-# 作用: 基于用户的访问控制
-auth_basic_user_file
-# 作用: 账号密码文件
-# 产生: 建议使用 htppasswd 创建
+keepalive_disable [msie6 | safari | none ]
+# 对指定的浏览器(User Agent)禁止使用长连接；
 
-location /admin/ {
-    auth_basic "only for adminor";
-    auth_basic_user_filer /etc/nginx/user/.httppasswd;      
+tcp_nodelay on|off
+# 对keepalive连接是否使用TCP_NODELAY选项, on 表示不启用；
+
+client_header_timeout time;
+# 读取http请求首部的超时时长；
+
+client_body_timeout time;
+# 读取http请求包体的超时时长；
+
+send_timeout time;
+# 发送响应的超时时长；
+
+client_body_buffer_size size;
+# 用于接收客户端请求报文的body部分的缓冲区大小；默认为16k；
+# 超出此大小时，其将被暂存到磁盘上的由client_body_temp_path指令所定义的位置；
+
+client_body_temp_path path [level1 [level2 [level3]]];
+# 设定用于存储客户端请求报文的body部分的临时存储路径及子目录结构和数量；
+client_body_temp_path   /var/tmp/client_body  2 1 1
+#  1：表示用一位16进制数字表示一级子目录；0-f
+#  2：表示用2位16进程数字表示二级子目录：00-ff
+#  2：表示用2位16进程数字表示三级子目录：00-ff
+```
+
+### 2.4 对客户端请求的限制
+```
+limit_except method ... { ... }
+# 指定对范围之外的其它方法的访问控制；
+limit_except GET {
+    allow 172.16.0.0/16;
+    deny all;
 }
-htpasswd -c -m /path/user/.passwd tom
-```
-### 2.4 开启状态页
-```
-location /status {
-  stub_status on;
-  allow  172.16.0.0/16;
-  deny all;
-}
-stub_status {on|off};
-# 作用: 是否开启状态页；
-# 附注: 仅能用于 location 上下文
-# 显示:
-#    Active connnections: 当前所有处于打开状态的连接数
-#    server accept handled requests  n1 n2 n3
-#        - n1：表示已经接受的链接
-#        - n2：表示已经处理的链接
-#        - n3：表示已经处理的请求数
-#    Reading: n  Writing: w  Waiting: t
-#      - Reading: 正处于接收请求状态爱的链接数
-#      - Writing: 请求已经完成，正处于处理请求或发送响应过程中的连接数
-#      - Waiting: 保持连接模式，且处于活动状态的连接数
+
+client_max_body_size SIZE;
+# http请求包体的最大值；
+# 常用于限定客户所能够请求的最大包体；
+# 根据请求首部中的Content-Length来检测，以避免无用的传输；
+
+limit_rate speed;
+# 限制客户端每秒钟传输的字节数；默认为0，表示没有限制；
+
+limit_rate_after time;
+# nginx向客户发送响应报文时，如果时长超出了此处指定的时长，则后续的发送过程开始限速；
 ```
 
-### 2.5  url 重写与自定义日志
-2. rewrite: url 重写
-3. log_format: 自定义日志格式
-
+### 2.5 文件操作的优化
 ```
-location / {
-    rewriter ^/bbs/(.*)$  /forum/$1 break;
-    rewriter ^/bbs/(.*)$  https://www.tao.com/$1 redirect;  
-}
-rewrite  regex  replacement flag;
-# 作用: url 重写
-# eg: rewrite  ^/images/(.*\.jpg)$  /imgs/$1 break;
-# flag:
-#    last:
-#        一旦被当前规则匹配并重写后立即停止检查后续的其它rewrite的规则，
-#        而后通过重写后的规则重新发起请求,并从头开始执行 rewriter 检查；
-#    break:
-        一旦被当前规则匹配并重写后立即停止后续的其它rewrite的规则，
-        而后通过重写后的规则重新发起请求
-        且不会被当前的location 内的任何 rewriter 规则所检查；
-#    redirect: 以302临时重定向返回新的URL；
-#    permanent: 以301永久重定向返回新的URL；
+sendfile on|off
+# 是否启用sendfile功能；
 
+aio on | off | threads[=pool];
+# 是否启用aio功能；
 
-log_format format_name  "$remote_addr"
-# 作用: 自定义日志格式
-# format_name: 自定义格式的格式名
-access_log  logs/access.log  format_name;
-# 作用: 使用自定义格式记录日志
-```
+directio size | off;
+# 在Linux主机启用O_DIRECT标记，此处意味文件大于等于给定的大小时使用，例如directio 4m;
 
-### 3. https 服务配置
-生成私钥，生成证书签名请求，并获得证书
+open_file_cache max=N [inactive=time]|off
+# 作用: 是否打开文件缓存功能；
+# 参数：
+#      max: 缓存条目的最大值；当满了以后将根据LRU算法进行置换；
+#      inactive: 缓存项的非活动时长，某缓存条目在此选项指定时长内没有被访问过或
+#                访问次数少于open_file_cache_min_uses指令所指定的次数，则为非活动项，
+#                将自动被删除；默认为60s;
+# 缓存信息包括：
+#      文件句柄、文件大小和上次修改时间；
+#      已经打开的目录结构；
+#      没有找到或没有访问权限的信息；
 
-```
-serve {
-    listen 443 ssh;
-    server_name www.htttao.com;
+open_file_cache_min_uses number;
+# 在open_file_cache指令的inactive参数指定的时长内，至少应该被命中多少次方可被归类为活动项；
 
-    ssl_certificate  /etc/nginx/ssl/nginx.crt;
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;
+open_file_cache_valid time;
+# 多长时间检查一次缓存中的条目是否超出非活动时长，默认为60s;
 
-    ssl_session_cache  shared:SSL:1m;
-    ssl_session_timeout  5m;
-
-    ssl_ciphers HIGH:!aNULLL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    location / {
-        root /vhost/web/;
-        index index.html index.htm;
-    }
-}
+open_file_cache_errors on|off
+# 是否缓存文件找不到或没有权限访问等相关信息；
 ```
 
-## 4. fastcgi 配置
+### 2.6 客户端请求的特殊处理
 ```
-server {
-    location ~ \.php$ {
-        fastcgi_pass  127.0.0.1:9000;
-        fastcgi_pindex index.php;
-        fastcgi_param SCRIPT_FILENAME  /scripts$fastcgi_script_name;
-        include fastcgi_params;      
-    }
-}
+ignore_invalid_headers on|off
+# 是否忽略不合法的http首部；默认为on;
+# off意味着请求首部中出现不合规的首部将拒绝响应；只能用于server和http;
+
+log_not_found on|off
+# 是否将文件找不到的信息也记录进错误日志中；
+
+resolver address;
+# 指定nginx使用的dns服务器地址；
+
+resover_timeout time;
+# 指定DNS解析超时时长，默认为30s;
+
+server_tokens on|off;
+# 是否在错误页面中显示nginx的版本号；
+```
+
+### 2.7 内存及磁盘资源分配
+```
+client_body_in_file_only on|clean|off
+# HTTP的包体是否存储在磁盘文件中；
+# 非off表示存储，即使包体大小为0也会创建一个磁盘文件；
+# on表示请求结束后包体文件不会被删除，clean表示会被删除；
+
+client_body_in_single_buffer on|off;
+# HTTP的包体是否存储在内存buffer当中；默认为off；
+
+cleint_body_buffer_size size;
+# nginx接收HTTP包体的内存缓冲区大小；
+
+client_body_temp_path dir-path [level1 [level2 [level3]]];
+client_body_temp_path /var/tmp/client/  1 2
+# HTTP包体存放的临时目录；
+
+client_header_buffer_size size;
+# 正常情况下接收用户请求的http报文header部分时分配的buffer大小；默认为1k;
+
+large_client_header_buffers number size;
+# 存储超大Http请求首部的内存buffer大小及个数；
+
+connection_pool_size size;
+# nginx对于每个建立成功的tcp连接都会预先分配一个内存池，
+# 此处即用于设定此内存池的初始大小；默认为256；
+
+request_pool_size size;
+# nginx在处理每个http请求时会预先分配一个内存池，此处即用于设定此内存池的初始大小；默认为4k;
 ```
