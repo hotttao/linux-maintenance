@@ -39,6 +39,7 @@ iptables -t mangle -A PREROUTING -d 192.168.0.10 -p tcp --dport 22 -j MARK --set
     - PPC: 每端口持久，单服务持久调度
     - PFWMC: 每FWM持久, 单 FWM 持久调度
     - PCC: 每客户端持久，单客户端持久调度；director 会将用户的**任何请求都识别为集群服务**，并向RS进行调度
+
 ```
 # PPC: -p 表示持久连接，后跟持久连接时长，默认 360s
 ipvsadm -A -t 192.168.0.10:80  -s rr -p [600]

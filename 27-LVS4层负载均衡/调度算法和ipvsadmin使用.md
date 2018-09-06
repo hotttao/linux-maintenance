@@ -27,20 +27,17 @@ LVS 的调度算法分为静态方法和动态方法两类
 
 
 ## 2. ipvsadm
-使用 ipvsadmin 定义一个负载均衡集群时，需要两步骤:
-1. 定义和管理一个集群服务
-2. 管理集群服务中的RS
+### 2.1 ipvsadmin 简介
+使用 ipvsadmin 定义一个负载均衡集群时
+1. 首先要定义一个集群，然后向集群内添加 RS。
+2. 一个 ipvs 主机可以同时定义多个集群服务
+3. 一个 cluster server 上至少应该有一个 real server
 
-ipvs 集群服务
-- 一个 ipvs 主机可以同时定义多个 cluster service
-- 一个 cluster server 上至少应该有一个 real server
-- 定义时，要指明 lvs-type，以及 lvs scheduler
+在适用 ipvsadmin 定义集群服务之前，首先要确定 ipvs 已在内核中启用。Centos 的 `/boot/config-VERSION` 文件内记录了编译内核的所有参数，通过此文件查看 ipvs 配置参数即可确定 ipvs 是否启用。
 
-### 2.1 ipvs 是否启动
-在使用 LVS 之前，我们首先需要取定 LVS 已在内核种启用
-```
+```bash
 # 查看 ipvs 在内核中是否启用，及其配置
-grep -i -A 10 "IP_VS" /boot/config-3.10.0-514.el7.x86_64
+$ grep -i -A 10 "IP_VS" /boot/config-3.10.0-514.el7.x86_64
 
 CONFIG_IP_VS=m
 CONFIG_IP_VS_IPV6=y
@@ -72,46 +69,105 @@ CONFIG_IP_VS_SED=m
 CONFIG_IP_VS_NQ=m
 ```
 
-
-### 2.2 管理集群服务
+### 2.2 ipvsadmin 程序包组成
 ```
-# 集群服务增，改，删，查
-ipvsadm -A|E -t|u|f service-address [-s scheduler]
-              [-p [timeout]] [-M netmask] [-b sched-flags]
-ipvsadm -D -t|u|f service-address
-ipvsadm -C
-ipvsadm -L|l [options]
-        -n: 基于数字格式显示ip和端口
-        -c: 显示当前已经建立的TCP连接
-        --state: 显示统计数据
-        --rate:  显示速率
-        --exact: 显示统计数据精确值
+$ yum install ipvsadm
+$ rpm -ql ipvsadm
+/etc/sysconfig/ipvsadm-config              # 默认的规则保存文件
+/usr/lib/systemd/system/ipvsadm.service    # unit file
+/usr/sbin/ipvsadm                          # 主程序
+/usr/sbin/ipvsadm-restore                  # 规则保存工具
+/usr/sbin/ipvsadm-save                     # 规则重载工具
 ```
 
-service-address
-- tcp: -t ip:port
-- udp: -u ip:port
-- fwm: -f mark
+ipvs 直接附加在内核之上，只要内核正常运行，ipvs 即可工作。ipvs 的 Unit file 主要是在启动时加载规则，在关闭时保存规则而已
 
-### 3.3 管理集群服务中的 RS  
 ```
-# 集群服务中的RS 增，改，删
-ipvsadm -a|e -t|u|f service-address -r server-address
-      [-g|i|m] [-w weight] [-x upper] [-y lower]
-ipvsadm -d -t|u|f service-address -r server-address
+# cat /usr/lib/systemd/system/ipvsadm.service
+[Unit]
+Description=Initialise the Linux Virtual Server
+After=syslog.target network.target
 
-# 清空和查看
-ipvsadm -C             
-ipvsadm -L|l [options]
+[Service]
+Type=oneshot
+# start 加载规则
+ExecStart=/bin/bash -c "exec /sbin/ipvsadm-restore < /etc/sysconfig/ipvsadm"
 
-ipvsadm -R      # 重载 == ipvsadm-restore
-ipvsadm -S [-n]  # 保存 == ipvsadm-save
-ipvsadm -Z [-t|u|f service-address]  # 清空计数器
+# stop 保存规则
+ExecStop=/bin/bash -c "exec /sbin/ipvsadm-save -n > /etc/sysconfig/ipvsadm"
+ExecStop=/sbin/ipvsadm -C
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
 ```
-参数:
-- server-address: ip[:port]
-- lvs-type:
-    - -g: gateway, lvs-dr 模型(默认)
-    - -i: ipip, lvs-tun 模型
-    - -m: masquerade, lvs-nat 模型
-- -s scheduler: 指定调度算法，默认 WLC
+
+
+### 2.3 ipvsadm 使用
+ipvsadm命令的核心功能：
+1. 集群服务管理：增、删、改；
+2. 集群服务的RS管理：增、删、改；
+3. 集群的查看
+
+#### 集群服务管理
+`ipvsadm -A|E -t|u|f service-address [-s scheduler] [-p [timeout]]`
+- 作用: 集群服务的增，改
+- 选项:
+  - `-A`: 添加集群服务
+  - `-E`: 修改集群服务
+  - `-t|u|f service-address`: 指定集群的作用的协议，地址和端口，唯一标识一个集群
+    - `-t`: TCP协议 VIP:TCP_PORT
+    - `-u`: UDP协议，VIP:UDP_PORT
+    - `-f`：firewall MARK，是一个数字
+  - `-s scheduler`: 调度算法，默认为 `wlc`
+
+`ipvsadm -D -t|u|f service-address`
+- 作用: 删除集群服务
+- 选项:
+  - `-t|u|f service-address`: 指定删除的集群
+
+`ipvsadm -C`
+- 作用: 清空定义的所有内容
+
+#### 管理集群服务上的 RS
+`ipvsadm -a|e -t|u|f service-address -r server-address [-g|i|m] [-w weight]`
+- 作用: 添加或修改集群服务的 RS
+- 选项:
+  - `-a`: 添加 RS
+  - `-e`: 修改 RS
+  - `-t|u|f service-address`:指定管理的集群
+  - `-r server-address[:port]`: 指定 RS 的 ip 地址端口
+  - `-g|i|m`: 指定lvs类型，默认为 m
+    - `-g`: gateway, dr类型
+    - `-i`: ipip, tun类型
+    - `-m`: masquerade, nat类型
+  - `-w weight`: 权重
+
+
+`ipvsadm -d -t|u|f service-address -r server-address`
+- 作用: 删除集群服务上的 RS
+- 选项:
+  - `-t|u|f service-address`:指定管理的集群
+  - `-r server-address[:port]`: 指定 RS 的 ip 地址端口
+
+#### 查看
+`ipvsadm -L|l [options]`
+- 作用: 查看集群状态信息
+- 选项:
+  - `--numeric, -n`: 基于数字格式显示ip和端口
+  - `--connection，-c`: 显示当前的连接
+  - `--exact`: 显示统计数据精确值  
+  - `--stats`: 显示统计数据
+  - `--rate` : 显示速率
+
+`ipvsadm -Z [-t|u|f service-address]`
+- 作用: 清空集群的计数器
+- 选项:
+  - `-t|u|f service-address`:指定管理的集群
+
+#### 规则保存和重载
+`ipvsadm -R`
+- 作用: 重载 == `ipvsadm-restore`
+
+`ipvsadm -S [-n]`
+- 作用: 保存 == `ipvsadm-save`
