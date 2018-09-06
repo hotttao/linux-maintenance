@@ -1,41 +1,34 @@
 # 27.3 LVS 调度算法和 ipvsadmin 命令使用
-
+上一节我们对 LVS 的工作原理和四种模型下如何实现负载均衡做了简单介绍，本节我们来学习 LVS 种可用的调度算法以及 ipvsadmin 命令的使用。
 ## 1. lvs 调度算法
-### 1.1 session 保持方法
-1. session 绑定:
-    - 定义: 将来自同一用户的请求始终调度到同一个 RS
-    - 方法: source ip_hash/cookie hash
-    - 问题: 主机迭机之后，该主机上的所有 session 也会丢失
-2. session 集群:
-    - 定义: 每一台主机上都保留了所有用户的 session
-    - 问题: session 同步问题
-3. session 服务器:
-    - 定义: 第三方服务持久化存储 session
-
-### 1.2 lvs scheduler
+LVS 的调度算法分为静态方法和动态方法两类
+### 1.1 静态算法
 静态方法: 仅根据算法本身进行调度
-1. RR: round robin, 轮调
-2. WRR: weighted rr, 加权轮调
-3. SH: source hash, 源地址哈希，实现 session 保持的机制 -- 来自同一个IP的请求始终调度至同一RS
-4. DH: destination hash，目标地址哈希，将对同一个目标的请求始终发往同一RS
+1. `RR`: round robin, 轮调
+2. `WRR`: weighted rr, 加权轮调
+3. `SH`: source hash, 源地址哈希，实现 session 保持的机制 -- 来自同一个IP的请求始终调度至同一RS
+4. `DH`: destination hash，目标地址哈希，将对同一个目标的请求始终发往同一RS
 
+### 1.2 动态算法
 动态方法: 根据算法及各 RS 的当前负载(Overhead)状态进行调度
-1. LC: Least Connection
+1. `LC`: Least Connection
     - Overhead = Active * 256 + Inactive
-2. WLC: Weighted LC
+2. `WLC`: Weighted LC
     - Overhead = (Active * 256 + Inactive) / weight
-3. SED: Shortest Expection Delay
+3. `SED`: Shortest Expection Delay
     - Overhead = (Active + 1) * 256 / weight
-4. NQ: Never Queue, 按照 SED 进行调度，但是被调度的主机，在下次调度时不会被选中 -- SED 算法改进
-5. LBLC:
+4. `NQ`: Never Queue, 按照 SED 进行调度，但是被调度的主机，在下次调度时不会被选中 -- SED 算法改进
+5. `LBLC`:
     - 定义: Locality-Based LC，即动态的 DH 算法
     - 作用: 正向代理情形下的 cache server 调度
-6. LBLCR: Locality-Based Least-Connection with Replication 带复制的LBLC算法
+6. `LBLCR`:
+    - 定义: Locality-Based Least-Connection with Replication 带复制的LBLC算法
+    - 特性: 相对于 LBLC，缓存服务器之间可以通过缓存共享协议同步缓存
 
 
-## 2. ipvsadm 的用法
-两步骤:
-1. 管理集群服务
+## 2. ipvsadm
+使用 ipvsadmin 定义一个负载均衡集群时，需要两步骤:
+1. 定义和管理一个集群服务
 2. 管理集群服务中的RS
 
 ipvs 集群服务
@@ -44,6 +37,7 @@ ipvs 集群服务
 - 定义时，要指明 lvs-type，以及 lvs scheduler
 
 ### 2.1 ipvs 是否启动
+在使用 LVS 之前，我们首先需要取定 LVS 已在内核种启用
 ```
 # 查看 ipvs 在内核中是否启用，及其配置
 grep -i -A 10 "IP_VS" /boot/config-3.10.0-514.el7.x86_64
@@ -79,9 +73,7 @@ CONFIG_IP_VS_NQ=m
 ```
 
 
-
-
-### 9.1 管理集群服务
+### 2.2 管理集群服务
 ```
 # 集群服务增，改，删，查
 ipvsadm -A|E -t|u|f service-address [-s scheduler]
@@ -101,7 +93,7 @@ service-address
 - udp: -u ip:port
 - fwm: -f mark
 
-### 9.2 管理集群服务中的 RS  
+### 3.3 管理集群服务中的 RS  
 ```
 # 集群服务中的RS 增，改，删
 ipvsadm -a|e -t|u|f service-address -r server-address
