@@ -16,7 +16,7 @@ LVS 位于内核空间，直接附加在 iptables netfilter 的 nat 表的 INPUT
 ngxin/haproxy 则工作在应用层，同时充当服务器端和客户端，作为服务器接收用户请求，再作为客户端将用户请求转发给后端主机集群的服务器。因为工作于应用层，需要创建套接字以完成网络通信，所以存在套接字数量限制。
 
 ## 2. LVS 负载均衡原理
-![iptables_frame](../images/23/iptables_frame.jpg)
+![iptables_frame](../images/27/lvs_base.png)
 
 LVS 有两个部分组成:
 - `ipvs`: 工作于内核空间中 netfilter INPUT 链上的钩子函数
@@ -30,40 +30,6 @@ LVS 有两个部分组成:
 
 因此对于 LVS 而言，报文的流经顺序为 `PREROUTING --> INPUT --> POSTROUTING`
 
-```
-# 查看 ipvs 在内核中是否启用，及其配置
-grep -i -A 10 "IP_VS" /boot/config-3.10.0-514.el7.x86_64
-
-CONFIG_IP_VS=m
-CONFIG_IP_VS_IPV6=y
-# CONFIG_IP_VS_DEBUG is not set
-CONFIG_IP_VS_TAB_BITS=12
-
-#
-# IPVS transport protocol load balancing support
-#
-CONFIG_IP_VS_PROTO_TCP=y
-CONFIG_IP_VS_PROTO_UDP=y
-CONFIG_IP_VS_PROTO_AH_ESP=y
-CONFIG_IP_VS_PROTO_ESP=y
-CONFIG_IP_VS_PROTO_AH=y
-CONFIG_IP_VS_PROTO_SCTP=y
-
-#
-# IPVS scheduler
-#
-CONFIG_IP_VS_RR=m
-CONFIG_IP_VS_WRR=m
-CONFIG_IP_VS_LC=m
-CONFIG_IP_VS_WLC=m
-CONFIG_IP_VS_LBLC=m
-CONFIG_IP_VS_LBLCR=m
-CONFIG_IP_VS_DH=m
-CONFIG_IP_VS_SH=m
-CONFIG_IP_VS_SED=m
-CONFIG_IP_VS_NQ=m
-```
-
 ## 3. LVS 术语及架构
 ### 3.1 LVS 组成
 LVS(Linux Virtual Server) 由 VS, RS 两个部分组成
@@ -73,12 +39,12 @@ LVS(Linux Virtual Server) 由 VS, RS 两个部分组成
 ### 3.2 LVS的类型(架构)
 LVS 有四种不同的类型，这四中类型的工作流程实现就是我们接下来讲解的重点:
 1. `lvs-nat`: Network Address Translation，多目标IP的DNAT，通过修改请求报文的目标IP完整转发
-2. `lvs-dr`: Direct Routing，直接路由，通过操纵封装新的MAC地址完成转发
+2. `lvs-dr`: Direct Routing，直接路由，通过重新封装新的MAC地址完成转发
 3. `lvs-tun`:IP Tunneling，在原请求IP报文之外新加一个IP首部
 4. `lvs-fullnat`:修改请求报文的源和目标IP，非标准实现
 
-### 4， LVS-NAT(MASQUERADE)
-![web_fram](../images/27/lvs_frame.jpg)
+## 3，3 LVS-NAT(MASQUERADE)
+![web_fram](../images/27/lvs_nat.jpg)
 
 附注: IP 命名:
 - `VIP`：Virtual IP
@@ -93,7 +59,7 @@ LVS 有四种不同的类型，这四中类型的工作流程实现就是我们�
 4. vs必须是Linux系统，rs可以是任意系统；
 5. RS 的 RIP 和 Director 的 DIP 必须在同一 IP 网络
 
-### 5. LVS-DR(GATEWAY)
+### 3.4 LVS-DR(GATEWAY)
 ![web_fram](../images/27/lvs_dr.jpg)
 
 LVS-DR 通过修改请求报文的目标 MAC 地址进行转发。如上图所示，报文经过了如下的转发过程:
@@ -107,11 +73,11 @@ LVS-DR 通过修改请求报文的目标 MAC 地址进行转发。如上图所�
 3. Linux 上响应报文的源IP，是由其发出的第一块网卡上的IP 地址决定，因此我们必需设置 RS 的路由条目，让所有的响应报文从 VIP 所在的网卡发出。
 
 那我们如何保证前端路由将目标地址为VIP的报文统统发往 VS，而不能是 RS 呢？有三种方法:
-1. 静态地址绑定：在前端路由器上操作(问题：未必有路由操作权限)
-2. aprtables: 在 RS 上拒绝对VIP的请求做响应，不好用
-3. **修改RS上内核参数，将RS上的VIP配置在lo接口的别名上，并限制其不能响应对VIP地址解析请求(最佳)**
+1. 在前端路由器上静态绑定 VS VIP 地址所在网卡的 MAC 地址；问题是未必有路由操作权限，且无法为 VS 实现高可用
+2. 使用 aprtables 在 RS 上拒绝对 VIP 的请求做响应，aprtables 类似防火墙的工作于物理层，可通过 MAC 过滤，使用复杂不便于配置
+3. **修改RS上内核参数，将RS上的VIP配置在lo接口的别名上，并限制lo接口的 arp 通告和响应，这样就能阻断 RS 对 VIP 地址的解析请求，这是最佳的解决方案。**
 
-因此 VIP 必需配置的 lo 接口的别名上，我们同时必需设置路由，让响应报文优先从 lo 发出，再通过网卡发送给客户端。
+因此 VIP 必需配置的 lo 接口的别名上，同时必需设置路由，让响应报文优先从 lo 发出，再通过网卡发送给客户端。
 
 LVS-DR 具有如下特征:
 1. RS可以使用私有地址；但也可以使用公网地址，此时可通过互联网通过RIP对其直接访问；
@@ -121,110 +87,45 @@ LVS-DR 具有如下特征:
 5. RS可以是大多数常见的OS；
 6. RS的网关绝不允许指向DIP；
 
-### 6. lvs-tun(IPIP)
-- 架构: 不修改请求报文的 ip 首部，而是通过在原有的 ip 首部(cip -- vip)之外，在封装一个 ip 首部(dip -- rip)
-- 特性:
-    - RIP、VIP、DIP全部是公网地址；
-    - RS的网关不会也不可能指向DIP；
-    - 请求报文经由Director，但响应报文必须不能经过Director；
-    - 不支持端口映射；
-    - RS的OS必须支持隧道功能；
+### 3.5 LVS-TUN(IPIP)
+LVS-NAT 需要 RS 的网关必需指向 DIP，因此 RS 和 VS 必需位于同一网段中，LVS-DR VS 需要能获取到 RS 的 MAC 地址，因此 VS 和 RS 必需位于同一物理网段中；通常的传输介质，比如双绞线最大的传输距离也就只有 100 米，所以 VS 和 RS 必需位于同一机房内，所以如果各 RS 不再同一位置，比如为了灾备在不同地方分别放置了集群服务器，这两种模式就无法使用。
+
+LVS-TUN 类似 LVS-DR 不过其能跨越地理位置的限制。 LVS-TUN 不修改请求报文的 ip 首部，而是通过在原有的 ip 首部之外，在封装一个 ip 首部。真个请求响应过程如下图所示。
+
+![web_fram](../images/27/lvs_tun.jpg)
+
+与 LVS-DR 相同的是每个 RS 都必须配置 VIP，并将 VIP 所在网卡作为响应报文的出口以确保响应报文的源IP 为 VIP。但是 RS 无需限制 ARP 的通告和响应，因为此时 VS 与 RS 不再同一网络中。RS 上配置的 VIP 不会影响请求报文到达 VS，因为 VIP 不可能位于 RS 的网段中，因此 RS 中 VIP 是不可达网络，不能接收到发送到 VIP 的请求。
+
+因为额外添加一层 IP 首部，因此 RS 必需要支持隧道协议，否则无法解析转发的报文。同时额外增加的 IP 首部会增加报文大小，如果刚好使得报文从小于 MTU 变成大于 MTU，则会发生报文拆分降低传输速度，因此 VS 上最好能针对这种情况自动拆分报文。
+
+LVS-TUN 具有如下特性:
+- RIP、VIP、DIP全部是公网地址；
+- RS的网关不会也不可能指向DIP；
+- 请求报文经由Director，但响应报文必须不能经过Director；
+- 不支持端口映射；
+- RS的OS必须支持隧道功能；
 
 
-### 7. lvs-fullnat
-- 架构: director 通过同时修改请求报文的目标地址和源地址进行转发
-- 特性:
-    - VIP 是公网地址，RIP 和 DIP 是私网地址，二者无须在同一网络中
-    - RS 接收到的请求报文的源地址为 DIP，因此要响应给 DIP
-    - 请求报文和响应报文都必须经由 Director
-    - 支持端口映射
-    - RS 可以使用任意 OS
-- 注意: 内核默认不支持 fullnat, 使用此功能需要到淘宝开源官网下载并重新编译内核
+### 3.6 LVS-FULLNAT
+LVS-TUN 虽然能跨越地理位置的限制，但是配置起来不便，很少使用。为了满足跨越机房的需求，LVS 有第四种非标准实现 LVS-FULLNAT。LVS-FULLNAT 未收录进内核，要使用需要自己编译内核才能使用。
 
+LVS-NAT 只修改了请求报文的目标地址，因此 RS 进行响应时，为了让目标地址为 CIP 经过 VS，必需将 RS 的网关设置为 RS。LVS-FULLNAT 会同时修改请求报文的目标地址和源地址进行转发，
 
-## 8. lvs 调度算法
-### 8.1 session 保持方法
-1. session 绑定:
-    - 定义: 将来自同一用户的请求始终调度到同一个 RS
-    - 方法: source ip_hash/cookie hash
-    - 问题: 主机迭机之后，该主机上的所有 session 也会丢失
-2. session 集群:
-    - 定义: 每一台主机上都保留了所有用户的 session
-    - 问题: session 同步问题
-3. session 服务器:
-    - 定义: 第三方服务持久化存储 session
+![web_fram](../images/27/lvs_fullnat.png)
 
-### 8.2 lvs scheduler
-静态方法: 仅根据算法本身进行调度
-1. RR: round robin, 轮调
-2. WRR: weighted rr, 加权轮调
-3. SH: source hash, 源地址哈希，实现 session 保持的机制 -- 来自同一个IP的请求始终调度至同一RS
-4. DH: destination hash，目标地址哈希，将对同一个目标的请求始终发往同一RS
+这样 RS 的响应报文的目标地址为 DIP 而不是 CIP，报文经过路由一定到达 VS，因此 就可以跨越同一网络的限制。
 
-动态方法: 根据算法及各 RS 的当前负载(Overhead)状态进行调度
-1. LC: Least Connection
-    - Overhead = Active * 256 + Inactive
-2. WLC: Weighted LC
-    - Overhead = (Active * 256 + Inactive) / weight
-3. SED: Shortest Expection Delay
-    - Overhead = (Active + 1) * 256 / weight
-4. NQ: Never Queue, 按照 SED 进行调度，但是被调度的主机，在下次调度时不会被选中 -- SED 算法改进
-5. LBLC:
-    - 定义: Locality-Based LC，即动态的 DH 算法
-    - 作用: 正向代理情形下的 cache server 调度
-6. LBLCR: Locality-Based Least-Connection with Replication 带复制的LBLC算法
+LVS-FULLNAT具有如下特性:
+- VIP 是公网地址，RIP 和 DIP 是私网地址，二者无须在同一网络中
+- RS 接收到的请求报文的源地址为 DIP，因此要响应给 DIP
+- 请求报文和响应报文都必须经由 Director
+- 支持端口映射
+- RS 可以使用任意 OS
 
-
-## 9. ipvsadm 的用法
-两步骤:
-1. 管理集群服务
-2. 管理集群服务中的RS
-
-ipvs 集群服务
-- 一个 ipvs 主机可以同时定义多个 cluster service
-- 一个 cluster server 上至少应该有一个 real server
-- 定义时，要指明 lvs-type，以及 lvs scheduler
-
-
-### 9.1 管理集群服务
-```
-# 集群服务增，改，删，查
-ipvsadm -A|E -t|u|f service-address [-s scheduler]
-              [-p [timeout]] [-M netmask] [-b sched-flags]
-ipvsadm -D -t|u|f service-address
-ipvsadm -C
-ipvsadm -L|l [options]
-        -n: 基于数字格式显示ip和端口
-        -c: 显示当前已经建立的TCP连接
-        --state: 显示统计数据
-        --rate:  显示速率
-        --exact: 显示统计数据精确值
-```
-
-service-address
-- tcp: -t ip:port
-- udp: -u ip:port
-- fwm: -f mark
-
-### 9.2 管理集群服务中的 RS  
-```
-# 集群服务中的RS 增，改，删
-ipvsadm -a|e -t|u|f service-address -r server-address
-      [-g|i|m] [-w weight] [-x upper] [-y lower]
-ipvsadm -d -t|u|f service-address -r server-address
-
-# 清空和查看
-ipvsadm -C             
-ipvsadm -L|l [options]
-
-ipvsadm -R      # 重载 == ipvsadm-restore
-ipvsadm -S [-n]  # 保存 == ipvsadm-save
-ipvsadm -Z [-t|u|f service-address]  # 清空计数器
-```
-参数:
-- server-address: ip[:port]
-- lvs-type:
-    - -g: gateway, lvs-dr 模型(默认)
-    - -i: ipip, lvs-tun 模型
-    - -m: masquerade, lvs-nat 模型
-- -s scheduler: 指定调度算法，默认 WLC
+### 3.7 总结
+- `lvs-nat`, `lvs-fullnat`：请求和响应报文都经由Director
+  - `lvs-nat`：RIP的网关要指向DIP；
+  - `lvs-fullnat`：RIP和DIP未必在同一IP网络，但要能通信；
+- `lvs-dr`, `lvs-tun`：请求报文要经由Director，但响应报文由RS直接发往Client
+  - `lvs-dr`：通过封装新的MAC首部实现，通过MAC网络转发
+  - `lvs-tun`：通过在原IP报文之外封装新的IP首部实现转发，支持远距离通信
