@@ -1,5 +1,5 @@
 # 27.4 LVS nat模型实战
-本节我们就开始着手搭建一个 LVS-NAT 的负载均衡集群。
+本节我们将搭建一个 LVS-NAT 的负载均衡集群。
 
 ## 1. 网络拓扑结构
 ![web_fram](../images/27/LVS-NAT-FRAME.png)
