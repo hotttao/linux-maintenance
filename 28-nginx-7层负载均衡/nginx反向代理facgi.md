@@ -1,6 +1,14 @@
 # 28.2 nginx反向代理facgi
+在讲解 httpd 的时候，我们说过通过 php 搭建一个 动态站点时，httpd 与 php 有三种结合方式
+1. CGI: 由 httpd 服务创建子进程来加载和执行 php 脚本
+2. fpm（FastCGI Process Manager): php 进程管里器，将 php 的解析执行作为独立的应用程序服务器
+3. modules: 将 php编译成为 httpd 的模块，httpd 既是 web 服务器也是应用程序服务器
+
+nginx 与 php 结合的话则只能通过 fpm，将 php 运行为独立的应用程序服务器，nginx 通过反代的模式与 fpm 结合起来。nignx 基于 ngx_http_fastcgi_module 模块就能作为 fastcgi 协议的客户端与 fpm 通信。本节我们就来详解 nignx fastcgi 反向代理的相关配置。
 
 ## 1. ngx_http_fastcgi_module
+ngx_http_fastcgi_module 提供的配置的参数与 ngx_http_proxy_module 提供的参数几乎完全相同，只是将开头的 http 换成的 fastcgi。
+
 ### 1.1 fastcgi 反向代理配置
 ```
 # LNMP 配置

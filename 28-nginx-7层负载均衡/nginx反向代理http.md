@@ -1,5 +1,4 @@
 # 28.1 nginx反向代理http
-
 ## 1. ngx_http_proxy_module 模块
 ### 1.1 proxy_pass
 功能: http 方向代理
@@ -53,7 +52,7 @@ Syntax: proxy_cache_use_stale error | timeout | invalid_header | updating | http
 Default:    proxy_cache_use_stale off;
 Context:    http, server, location
 
-# 6. 最少被请求多少次才会被缓存
+# 6. proxy_path 定义的 inactive 非活动时间内，最少被访问多少次才不会被清理
 Syntax: proxy_cache_min_uses number;
 Default:    proxy_cache_min_uses 1;
 Context:    http, server, location
@@ -90,9 +89,10 @@ http {
 
 ```
 
-### 1.3 其他相关配置
+### 1.3 超时时长设置
 ```
 proxy_connect_timeout  # 设置连接被代理服务器的超时时长
-proxy_read_timeout    #
+proxy_read_timeout     # 
+proxy_send_timeout     # 
 proxy_hide_header      # 隐藏由被代理服务器响应给客户端的指定首部
 ```
