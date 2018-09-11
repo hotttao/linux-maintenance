@@ -1,13 +1,37 @@
 # 28.1 nginx反向代理http
-## 1. ngx_http_proxy_module 模块
-### 1.1 proxy_pass
-功能: http 方向代理
+nginx 是高度模块化，http 的反向代理功能主要由 `ngx_http_proxy_module` 模块提供，本节我们来讲解如何将 nginx 配置成一个 http 的反向代理服务器，内容包括:
+1. nginx 七层反向代理原理
+2. 反向代理服务器参数配置
+  - 服务参数配置
+  - 代理缓存配置
+  - http 首部字段配置
+  - 超时时长配置
+
+
+## 1. nginx 七层反向代理原理
+
+
+## 2. ngx_http_proxy_module
 ```
-location /url {
-    proxy_pass      http://back_server:port/newurl;
+# http 反向代理示例
+location / {
+    proxy_pass       http://localhost:8000;
     proxy_set_header Host      $host;
     proxy_set_header X-Real-IP $remote_addr;
 }
+```
+
+### 2.1 服务参数配置
+
+#### proxy_pass
+
+`proxy_pass URL`
+- 作用: 指定被代理的后端服务器
+- Default:	—
+- Context:	location, if in location, limit_except
+
+
+```
 # 示例-使用正则表达式
 # a.jpg --> http://192.168.0.10/a.jpg
 location ~* \.(jpg|png|gif)$ {
@@ -17,6 +41,7 @@ location ~* \.(jpg|png|gif)$ {
     # proxy_pass http://192.168.0.10/images;  # 错误  
 }
 ```
+
 url代理规则:
 1. 使用非匹配模式的url，直接请求 proxy_pass 映射的 new_url
 2. 存在 url 重定向，使用重定向之后的 url 进行匹配
@@ -25,6 +50,7 @@ url代理规则:
 
 ### 1.2 proxy_cache
 - 功能: 代理缓存
+
 ```
 # 1. proxy_cache_path: 定义缓存路径
 Syntax:    proxy_cache_path path [levels=levels] [use_temp_path=on|off] keys_zone=name:size [inactive=time] [max_size=size] [manager_files=number] [manager_sleep=time] [manager_threshold=time] [loader_files=number] [loader_sleep=time] [loader_threshold=time] [purger=on|off] [purger_files=number] [purger_sleep=time] [purger_threshold=time];
@@ -92,7 +118,7 @@ http {
 ### 1.3 超时时长设置
 ```
 proxy_connect_timeout  # 设置连接被代理服务器的超时时长
-proxy_read_timeout     # 
-proxy_send_timeout     # 
+proxy_read_timeout     #
+proxy_send_timeout     #
 proxy_hide_header      # 隐藏由被代理服务器响应给客户端的指定首部
 ```
