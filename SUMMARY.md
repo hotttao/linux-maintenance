@@ -157,7 +157,7 @@
 * [29. keepalived实现高可用集群](29-keepalived/README.md)
     * [29.1 高可用集群开源软件实现](29-keepalived/高可用集群开源软件实现.md)
     * [29.2 keepalived安装配置](29-keepalived/keepalived安装配置.md)
-    * [29.3 keepalived实现nginx高可用](29-keepalived/keepalived实现nginx高可用.md)
+    * [29.3 keepalived配置示例](29-keepalived/keepalived配置示例.md)
 * [30. http缓存服务加速-varnish](30-varnish/README.md)
     * [30.1 web架构演变及缓存优化](30-varnish/web站点架构演变及缓存系统优化.md)
     * [30.2 varnish入门及安装配置](30-varnish/varnish服务入门及安装配置.md)
