@@ -34,62 +34,68 @@ locations url_pattern{
 }
 ```
 nginx 通过 proxy_pass URL 传递 location 匹配到的 url 时存在一些规则和限制
-1. 如果存在 url 重定向，会重定向之后的 url 进行匹配
-2. url_pattern 是 `~/~*` 表示的正则表达式 则 URL不能包含 PATH，否则为语法错误，即 URL 只能是 `http[s]://IP:PORT`
-3. 默认情况下，nginx 会将 location 匹配到的剩余部分直接附加在 URL 后，传递给后端服务器，所以 locations 与 URL 通常是要么都以 `/` 结尾，要么都不以 `/` 结尾。
-4. 特殊的，如果 URL 的 PATH 仅仅为 `/`,`/` 有没有均可
+1. proxy_pass后面的路径不带uri时，其会将location的uri传递给后端主机；
+2. proxy_pass后面的路径是一个uri时，其会将location的uri替换为proxy_pass的uri，效果是 nginx 会将 location 匹配到的剩余部分直接附加在 URL 后，传递给后端服务器，所以 locations 与 URL 通常是要么都以 `/` 结尾，要么都不以 `/` 结尾。
+5. 如果location定义其uri时使用了正则表达式的模式，或在if语句或limt_execept中使用proxy_pass指令，则proxy_pass之后必须不能使用uri; 用户请求时传递的uri将直接附加代理到的服务的之后；
+
 
 ```
-# 2. 正式表达式，URL 不能有 PATH
-# a.jpg --> http://192.168.0.10/a.jpg
-location ~* \.(jpg|png|gif)$ {
-    proxy_pass http://192.168.0.10;
-    # proxy_pass http://192.168.0.10/;        # 错误
-    # proxy_pass http://192.168.0.10/images/; # 错误
-    # proxy_pass http://192.168.0.10/images;  # 错误  
+# 1.
+location /uri/ {
+    proxy http://hos[:port];
 }
+http://HOSTNAME/uri --> http://host/uri
 
+
+# 2.
+location /uri/ {
+  proxy http://host/new_uri/;
+}
+http://HOSTNAME/uri/ --> http://host/new_uri/
+
+location /uri/ {
+  proxy http://host/new_uri;   # 错误，要么都以 `/` 结尾，要么都不以 `/` 结尾。
+}
+http://HOSTNAME/uri/test --> http://host/new_uritest
 
 # 3.
-# /admin/status.php --> /pamstatus.php
-# status.php 被直接附加在 URL 后
-location /admin/ {
-    proxy_pass http://192.168.0.10/pam
+location ~|~* /uri/ {
+  proxy http://host;
 }
-
-# 3.
-# URL 只以 / 结尾时，/ 是可省略的
-location / {
-    proxy_pass http://192.168.0.10;
-    proxy_pass http://192.168.0.10/;
-}
+http://HOSTNAME/uri/ --> http://host/uri/；
 ```
 
-### 2.2 后端服务配置
+### 2.2 代理缓存配置
 #### proxy_cache_path
 `proxy_cache_path path options`
 - Default:    —
 - Context:    http
-- 作用: 定义缓存路经及属性
+- 作用: 定义可用于proxy功能的缓存
 - options:
-  - `[levels=levels]`
-  - `keys_zone=name:size`
-  - `[inactive=time]`
-  - `[max_size=size]`
+  - `[levels=levels]`: 缓存的目录结构层级
+  - `keys_zone=name:size`: 缓存区域名称即内存大小
+  - `[inactive=time]`: 非活动链接的检测时间间隔
+  - `[max_size=size]`: 缓存的文件所占用的最大磁盘大小
 
 #### proxy_cache
 `proxy_cache zone | off`
 - Default:    proxy_cache off;
 - Context:    http, server, location
-- 作用: 使用缓存
+- 作用: 指明要调用的缓存，或关闭缓存机制
 - 参数:
   - `zone`: proxy_cache_path 定义的缓存
+
+#### proxy_cache_key
+`proxy_cache_key string`
+- Default: `proxy_cache_key $scheme$proxy_host$request_uri;`
+- Context:	http, server, location
+- 作用: 缓存中用于“键”的内容；
 
 #### proxy_cache_valid
 `proxy_cache_valid [code ...] time`;
 - Default:    —
 - Context:    http, server, location
-- 作用: 定义不同响应码的缓存时长
+- 作用: 定义对特定响应码的响应内容的缓存时长；
 - 参数:
   - `code`: 响应码
   - `time`: 缓存时长
@@ -145,10 +151,63 @@ http {
 
 ```
 
-### 1.3 超时时长设置
+### 2.3 代理 header 设置
+#### proxy_set_header
+`proxy_set_header field value`
+- Default:
+  - `proxy_set_header Host $proxy_host;`
+  - `proxy_set_header Connection close;`
+- Context:	http, server, location
+- 作用: 设定发往后端主机的请求报文的请求首部的值
+
 ```
-proxy_connect_timeout  # 设置连接被代理服务器的超时时长
-proxy_read_timeout     #
-proxy_send_timeout     #
-proxy_hide_header      # 隐藏由被代理服务器响应给客户端的指定首部
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for
 ```
+
+#### proxy_hide_header
+`proxy_hide_header field;`
+- Default:	—
+- Context:	http, server, location
+- 作用: 禁止 nginx 将哪些从后端服务器接收的响应传递给客户端，默认情况下 nignx 已经禁止将  “Date”, “Server”, “X-Pad”, and “X-Accel-...” 发送给客户端，此选项的配置值会附加到禁止列表中。
+
+### 2.4 超时设置
+#### proxy_connect_timeout
+`proxy_connect_timeout time;``
+- Default: `proxy_connect_timeout 60s;`
+- Context:	http, server, location
+- 作用: 与后端服务器建立链接的超时时长
+
+#### proxy_read_timeout
+`proxy_read_timeout time;`
+- Default: `proxy_read_timeout 60s;`
+- Context:	http, server, location
+- 作用: nginx 向接收后端服务器响应时，两次报文之间的超时时长
+
+####	proxy_send_timeout
+`proxy_send_timeout time;`
+- Default: `proxy_send_timeout 60s;`
+- Context:	http, server, location
+- 作用: nginx 向后端服务器发送请求时，两次报文之间的超时时长
+
+
+### 3. ngx_http_headers_module
+ngx_http_headers_module 允许 nginx 配置发给用户的响应报文的 header
+
+#### add_header
+`add_header name value [always];`
+- Default:	—
+- Context:	http, server, location, if in location
+- 作用: 向响应报文中添加自定义首部；
+
+```
+add_header X-Via $server_addr;
+add_header X-Accel $server_name;
+```
+
+#### expires
+`expires [modified] time;`  
+`expires epoch | max | off;`  
+- Default: expires off;
+- Context:	http, server, location, if in location
+- 作用: 用于定义Expire或Cache-Control首部的值，或添加其它自定义首部；
