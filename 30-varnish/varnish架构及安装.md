@@ -15,7 +15,7 @@ varnish 由如下几个部分组成
   - Acceptor线程：接受新的连接并代表它们
   - Worker线程：一个会话一个线程，通常会使用数百个Worker线程
   - Expiry线程：负责从缓存中清除旧的内容
-3. shared memory log: 位提升性能，日志是直接存放在内存中的，因此需要特定的工具查看和保存
+3. shared memory log: 为提升性能，日志是直接存放在内存中的，因此需要特定的工具查看和保存
   - varnishlog
   - varnishncsa
   - varnishstat...
@@ -54,7 +54,7 @@ $ rpm -ql  varnish|egrep  -v "(man|doc)"
 - 作用: varnish 主程序
 - 配置文件: `/etc/varnish/varnish.params`
 - 选项:
-    - `-a address[:port][,address[:port][...]`: varnish 进程监听的地址和端口，默认为6081端口；
+    - `-a address[:port][,address[:port][...]`: varnish 监听的地址和端口，默认为6081
     - `-T address[:port]`: varnishadm 管理服务监听的地址和端口，默认为6082端口；
     - `-s [name=]type[,options]`: 定义缓存存储机制；
     - `-u user`: 运行用户
@@ -69,14 +69,6 @@ varnish 缓存存储机制(Storage Types)，分三种机制通过 `-s [name=]typ
 1. `malloc[,size]`: 内存存储，[,size]用于定义空间大小；重启后所有缓存项失效；
 2. `file[,path[,size[,granularity]]]`: 磁盘文件存储，黑盒；重启后所有缓存项失效；
 3. `persistent,path,size`: 文件存储，黑盒；重启后所有缓存项有效；实验阶段
-
-#### varnish 运行时参数
-varnish 运行时参数用于指定 Child/cache 子进程的工作特性。可通过  `varnishd -p` 选项指定。在 `/etc/varnish/varnish.params` 配置文件中使用 `DEAMON_OPTS` 选项配置
-
-```
-$ cat /etc/varnish/varnish.params |grep DAEMO
-#DAEMON_OPTS="-p thread_pool_min=5 -p thread_pool_max=500 -p thread_pool_timeout=300"
-```
 
 ### 2.2 varnish_reload_vcl
 `varnish_reload_vcl`
@@ -129,7 +121,40 @@ panic.clear
 storage.list                                 # 缓存存储
 
 backend.list [<backend_expression>]         # 后端服务器
-backend.set_health <backend_expression> <state>
+backend.set_health <backend_expression> <state>  # 手动设置后端服务器状态
 ban <field> <operator> <arg> [&& <field> <oper> <arg>]...
 ban.list
 ```
+
+## 3. varnish 运行参数
+varnish 运行时参数用于指定 Child/cache 子进程的工作特性。有三种配置方式:
+1. 通过 `varnishd -p` 选项指定
+2. 在 `varnishadm` 中使用 `param.set` 子命令配置
+3. `/etc/varnish/varnish.params` 配置文件中使用 `DEAMON_OPTS` 选项配置，永久有效
+
+```
+$ cat /etc/varnish/varnish.params |grep DAEMO
+#DAEMON_OPTS="-p thread_pool_min=5 -p thread_pool_max=500 -p thread_pool_timeout=300"
+```
+
+varnish有众多的运行时参数，通常需要配置包括
+1. 线程相关的参数
+2. Timer 与超时相关的参数
+
+### 3.1 线程相关的参数
+在线程池内部，其每一个请求由一个线程来处理； 其worker线程的最大数决定了varnish的并发响应能力；
+1. `thread_pools`: 线程池数量，默认值为2，其值取决于 CPU 的核心数
+2. `thread_pool_max`：每个线程池创建最大线程的数量，默认5000，
+3. `thread_pool_min`：每个线程池保持最少线程的数量；额外意义为“最大空闲线程数”；默认100
+4. `thread_pool_timeout`： 线程空闲时间，超过阈值则摧毁线程
+5. `thread_pool_add_delay`：创建一个新线程的延迟时间，默认值为0s
+6. `thread_pool_destroy_delay`：摧毁一个线程的延迟时间，默认值为2s；
+
+varnish最大并发连接数=thread_pools * thread_pool_max，最大的并发连接数最好不要超过 3 万，否则 varnish 将不稳定。
+
+### 3.2 Timer相关的参数
+Timer 参数用于控制 varnish 内部的各种超时时长：
+1. `send_timeout`：向客户端发送响应的超时时间
+2. `timeout_idle`：客户端链接最大的空闲时长
+3. `timeout_req`： 从客户端接收请求的超时时长
+4. `cli_timeout`：child 子进程向 Management 的命令行接口进行响应的超时时长

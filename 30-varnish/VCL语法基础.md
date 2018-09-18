@@ -27,7 +27,7 @@ sub vcl_backend_response {
 
 ```
 
-VCL 可以看作是在 C 语言基础上二次开发的子语言，其保留了 C 语言基本的语法特性，并额外附加了特性:
+VCL 可以看作是在 C 语言基础上二次开发的子语言，保留了 C 语言基本的语法，并额外附加了特性:
 1. 首先作为一门语言 VCL 具有变量，赋值，条件判断等基本语法特性，需要额外提醒的是 VCL 没有循环
 2. 为了在更高层级上抽象缓存处理逻辑， VCL 在 C 基础上添加了"状态引擎"(state engine)
 3. VCL有多个状态引擎，状态之间存在相关性，但状态引擎彼此间互相隔离；每个状态引擎可使用`return(x)`指明关联至哪个下一级引擎；每个状态引擎对应于vcl文件中的一个配置段，即为 `subroutine`
@@ -59,11 +59,10 @@ VCL的语法格式：
 5. 没有循环, 并且受限于引擎的内建变量
 
 VCL 有限状态机
-1. Each request is processed separately;
-2. Each request is independent from others at any given time;
-3. States are related, but isolated;
-4. return(action); exits one state and instructs Varnish to proceed to the next state;
-5. Built-in VCL code is always present and appended below your own VCL;
+1. 每一个请求都会被单独的线程处理，并且在任何时间都与其他请求无关
+4. `return(action);` 将请求从当前状态引擎传递到一个新的状态引擎
+3. 状态引擎存在逻辑上的关联，但是彼此是相互独立的
+5. 内置的 VCL 代码总是被附加自定义的 VCL 代码之后
 
 ### 2.2 三类主要语法
 ```
@@ -95,6 +94,15 @@ return(), hash_data()
 7. `resp.*`: 由varnish响应给client相关；
 8. `obj.*`: 存储在缓存空间中的缓存对象的属性；只读；
 
+```
+# obj.hits是内建变量，用于保存某缓存项的从缓存中命中的次数；
+if (obj.hits>0) {
+  set resp.http.X-Cache = "HIT via " + server.ip;
+} else {
+  set resp.http.X-Cache = "MISS via " + server.ip;
+}
+```
+
 |变量组|变量|作用|
 |:---|:---||
 |bereq.*|bereq.http.HEADERS||
@@ -103,7 +111,7 @@ return(), hash_data()
 ||bereq.proto|请求的协议版本；|
 ||bereq.backend|指明要调用的后端主机；|
 |req.*|req.http.Cookie|客户端的请求报文中Cookie首部的值|
-||req.http.User-Agent |~ "chrome"|
+||req.http.User-Agent |～ 表示使用正则表达式|
 |beresp.*|beresp.http.HEADERS||
 ||beresp.status|响应的状态码|
 ||beresp.backend.name|BE主机的主机名；|
@@ -116,50 +124,16 @@ return(), hash_data()
 |client.*|client.ip||					
 
 #### 用户自定义变量
-使用 `set, unset` 自定义变量
-
-#### 示例
-```
-# 示例1：强制对某类资源的请求不检查缓存：
-vcl_recv {
-  if (req.url ~ "(?i)^/(login|admin)") {
-    return(pass);
-  }
-}
-
-
-# 示例2：对于特定类型的资源，例如公开的图片等，取消其私有标识，并强行设定其可以由varnish缓存的时长；
-
-# 定义在 vcl_backend_response 中
-vcl_backend_response{；
-  if (beresp.http.cache-control !~ "s-maxage") {
-    if (bereq.url ~ "(?i)\.(jpg|jpeg|png|gif|css|js)$") {
-      unset beresp.http.Set-Cookie;
-      set beresp.ttl = 3600s;
-    }
-  }
-}
-
-# 定义在vcl_recv中；
-vcl_recv{
-  if (req.restarts == 0) {
-    if (req.http.X-Fowarded-For) {
-      set req.http.X-Forwarded-For = req.http.X-Forwarded-For + "," + client.ip;
-    } else {
-      set req.http.X-Forwarded-For = client.ip;
-    }
-  }		
-}
-```
+使用 `set, unset` 自定义变量和取消变量
 
 ### 2.3 内置操作
 #### 内置函数
 常用内置函数:
-1. regsub(str, regex, sub)
-2. regsuball(str, regex, sub)
-3. ban(boolean expression)
-4. hash_data(input)
-5. synthetic(str)
+1. `regsub(str, regex, sub)`: 把str中被regex第一次匹配到字符串替换为sub；主要用于URL Rewrite
+2. `regsuball(str, regex, sub)`: 把str中被regex每一次匹配到字符串均替换为sub；
+3. `ban(boolean expression)`: Bans所有的其URL可以被此处的regex匹配到的缓存对象；
+4. `hash_data(input)`: 指明哈希计算的数据；减少差异，以提升命中率；
+5. `synth(status,"STRING")`：purge操作；
 
 #### 关键字
 常见的内置关键子:
@@ -175,11 +149,40 @@ vcl_recv{
 2. 逻辑操作符: `&&, ||, !`
 3. 变量赋值: `=`
 
+#### 正则表达式
+VCL 使用 `~` 表示使用正则表达式。eg: `req.url ~ "(?i)^/(login|admin)"`, 其中 `(?i)` 表示不区分字符大小写。
+
+
+### 2.4 示例
 ```
-# obj.hits是内建变量，用于保存某缓存项的从缓存中命中的次数；
-if (obj.hits>0) {
-  set resp.http.X-Cache = "HIT via " + server.ip;
-} else {
-  set resp.http.X-Cache = "MISS via " + server.ip;
+# 示例1：强制对某类资源的请求不检查缓存：
+vcl_recv {
+  if (req.url ~ "(?i)^/(login|admin)") {
+    return(pass);
+  }
+}
+
+
+# 示例2：对于特定类型的资源，例如公开的图片等，取消其私有标识，并强行设定其可以由varnish缓存的时长；
+# 定义在 vcl_backend_response 中
+vcl_backend_response{；
+  if (beresp.http.cache-control !~ "s-maxage") {
+    if (bereq.url ~ "(?i)\.(jpg|jpeg|png|gif|css|js)$") {
+      unset beresp.http.Set-Cookie;
+      set beresp.ttl = 3600s;
+    }
+  }
+}
+
+# 示例 3: 向后端主机传递客户端 IP
+# 定义在vcl_recv中；
+vcl_recv{
+  if (req.restarts == 0) {
+    if (req.http.X-Fowarded-For) {
+      set req.http.X-Forwarded-For = req.http.X-Forwarded-For + "," + client.ip;
+    } else {
+      set req.http.X-Forwarded-For = client.ip;
+    }
+  }		
 }
 ```
