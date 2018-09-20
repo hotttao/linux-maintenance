@@ -167,7 +167,7 @@
 * [31. haproxy](31-haproxy/README.md)
     * [31.1 haproxy 安装](31-haproxy/haproxy安装.md)
     * [31.2 haproxy 配置](31-haproxy/haproxy配置.md)
-    * [31.3 haproxy 负载均衡](31-haproxy/haproxy负载均衡.md)
+    * [31.3 haproxy 访问控制](31-haproxy/haproxy访问控制.md)
     * [31.4 haproxy 实战](31-haproxy/haproxy实战.md)
 * [32. 自动运维ansible应用与实战](32-ansible/README.md)
     * [32.1 dhcp服务简介](32-ansible/dhcp服务简介.md)
