@@ -1,4 +1,4 @@
-# 32.5 PXE 系统自动化部署
+# 32.2 PXE 系统自动化部署
 PXE 全称是 `preboot execute environment` 由 Intel 公司开发，用于为完成基于网络的引导安装。
 
 
@@ -87,4 +87,5 @@ cp /media/cdrom/isolinux/{boot.cfg,vesamenu.c32,splash.png} /var/lib/tftp/boot/
 # 2.2 配置开机启动菜单
 mkdir /var/lib/tftpboot/pxelinux.cfg/
 cp /media/cdrom/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default
+
 ```
