@@ -1,4 +1,4 @@
-# 32.6 ansible playbook
+# 32.7 ansible playbook
 
 ## 1. playbook 配置语法
 playbook的核心元素：
