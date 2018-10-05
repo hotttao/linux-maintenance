@@ -45,7 +45,10 @@ tasks:
 ```
 
 
-## 2. ansible 的组织形式
+## 2. ansible 最佳实践
+### 2.1 项目目录结构
+一个完整的 ansible 项目，顶层目录结构应当包括下列文件和目录，如果你正在使用云服务，使用动态清单会更好。
+
 ```
 production                # inventory file for production servers 关于生产环境服务器的清单文件
 stage                     # inventory file for stage environment 关于 stage 环境的清单文件
@@ -85,4 +88,44 @@ roles/
     webtier/              # same kind of structure as "common" was above, done for the webtier role
     monitoring/           # ""
     fooapp/               # ""
+```
+
+### 2.2 playbook
+通过 include 将独立分散的 ansible 任务整合在一起
+
+```
+---
+# file: site.yml            # 顶层的 site
+- include: webservers.yml
+- include: dbservers.yml
+
+
+---
+# file: webservers.yml     # webservers 的配置
+- hosts: webservers
+  roles:
+    - common
+    - webtierv
+```
+
+理念是我们能够通过 “运行”(running) site.yml 来选择整个基础设施的配置.或者我们能够通过运行其子集 webservers.yml 来配置. 这与 Ansible 的 `--limit` 类似,而且相对的更为显式:
+
+```
+ansible-playbook site.yml --limit webservers
+ansible-playbook webservers.yml
+```
+
+### 2.3 任务执行
+```
+# 想重新配置整个基础设施,如此即可:
+ansible-playbook -i production site.yml
+
+# 那只重新配置所有的 NTP 呢？太容易了.:
+ansible-playbook -i production site.yml --tags ntp
+
+# 只重新配置我的 Web 服务器呢？:
+ansible-playbook -i production webservers.yml
+
+#只重新配置我在波士顿的 Web服务器呢?:
+ansible-playbook -i production webservers.yml --limit boston
 ```
