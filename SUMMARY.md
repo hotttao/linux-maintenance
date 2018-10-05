@@ -177,6 +177,8 @@
     * [32.5 ansible简介](32-ansible/ansible简介.md)
     * [32.6 ansible 常用模块](32-ansible/ansible_module.md)
     * [32.7 ansible playbook](32-ansible/ansible_playbook.md)
+    * [32.8 ansible roles](32-ansible/ansible_roles.md)
+    * [32.9 ansible 最佳实践](32-ansible/ansible_practice.md)
 * [33. 企业级开源监控系统-zabbix](33-zabbix/README.md)
     * [33.1 故障发现与监控系统.md](33-zabbix/故障发现与监控系统.md)
     * [33.2 zabbix安装与入门](33-zabbix/zabbix安装与入门.md)

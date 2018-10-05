@@ -201,3 +201,24 @@ host2
 ntp_server=ntp.atlanta.example.com
 proxy=proxy.atlanta.example.com
 ```
+
+#### 分文件定义 Host 和 Group 变量
+在 inventory 主文件中保存所有的变量并不是最佳的方式.还可以保存在独立的文件中,这些独立文件与 inventory 文件保持关联. 不同于 inventory 文件(INI 格式),这些独立文件的格式为 YAML。
+
+```
+# 假设 inventory 文件的路径为:
+/etc/ansible/hosts
+
+# 分文件为 groups 和 host 定义的变量文件
+/etc/ansible/group_vars/raleigh       # raleigh 组变量
+/etc/ansible/group_vars/webservers    # webservers 组变量
+/etc/ansible/host_vars/foosball       # foosball 主机变量
+```
+
+还有更进一步的运用,你可以为一个主机,或一个组,创建一个目录,目录名就是主机名或组名.目录中的可以创建多个文件, 文件中的变量都会被读取为主机或组的变量。注意,分文件定义变量的方式只适用于 Ansible 1.4 及以上版本.
+```
+/etc/ansible/group_vars/raleigh/db_settings
+/etc/ansible/group_vars/raleigh/cluster_settings
+```
+
+Ansible 1.2 及以上的版本中,group_vars/ 和 host_vars/ 目录可放在 inventory 目录下,或是 playbook 目录下. 如果两个目录下都存在,那么 playbook 目录下的配置会覆盖 inventory 目录的配置。把你的 inventory 文件 和 变量 放入 git repo 中,以便跟踪他们的更新,这是一种非常推荐的方式.

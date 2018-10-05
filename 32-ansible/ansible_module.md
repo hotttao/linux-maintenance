@@ -7,7 +7,7 @@ ansible 的核心程序有三个
 2. ansible-doc: ansible 插件(模块)文档查看工具
 3. ansible-playbook: playbook 执行命令
 
-#### ansible
+### 1，1 ansible
 `ansible <host-pattern> [-m module_name] [-a args] options`
 - 作用: ansible 命令行工具
 - 模块:
@@ -22,6 +22,7 @@ ansible 的核心程序有三个
   - `-D, --diff`: 当执行的命令改变了文件或模板的内容时，显示更改前后的内容比较，最好和 `-C, --check` 一起使用
   - `-e EXTRA_VARS, --extra-vars=EXTRA_VARS`: 向 ansible 传递的额外参数，参数值必需是行如`key=value`的键值对
   - `-f FORKS, --forks=FORKS`: 并发操作的最大机器数
+  - `-i INVENTORY, --inventory=INVENTORY, --inventory-file=INVENTORY`: 定义 inventory 文件位置
   - `--list-hosts`: 只显示被操作的主机
   - `--syntax-check `:只对 playbook 执行语法检查, 不执行
   - `-t TREE, --tree=TREE`: 日志的输出目录
@@ -36,8 +37,46 @@ ansible 的核心程序有三个
   - `-b, --become`:
   - `--become-user=BECOME_USER`: 提权限操作切换到的用户，默认为 root
   - `--become-method=BECOME_METHOD`: 进行权限升级时使用的操作，默认为 sudo，可选值包括`sudo | su`
+  - `--ask-become-pass`: 使用 sudo 或 su 时，使用的密码
 
-#### ansible-doc
+#### host-pattern
+ansible 支持多种主机匹配方式，以便我们能灵活的控制要操作的主机范围。常见的方式有如下几种
+
+```bash
+# 1. 全部主机
+all
+*
+
+# 2. IP地址或系列主机名
+one.example.com
+one.example.com:two.example.com
+192.168.1.50
+192.168.1.*
+
+# 3. 一个或多个groups
+webservers             # 单个组
+webservers:dbservers   # 多个组的并集
+webservers:&staging    # 多个组的交集
+webservers:!phoenix    # ! 表示排除关系，隶属 webservers 组但同时不在 phoenix组
+
+# 4. host names, IPs , groups都支持通配符
+*.example.com
+*.com
+
+# 5. 通配和groups的混合使用
+one*.com:dbservers
+
+# 6. 应用正则表达式，只需要以 ‘~’ 开头
+~(web|db).*\.example\.com
+
+# 7. 通过 --limit 标记来添加排除条件
+ansible-playbook site.yml --limit datacenter2
+
+# 8. 从文件读取hosts,文件名以@为前缀即可
+ansible-playbook site.yml --limit @retry_hosts.txt
+```
+
+### 1.2 ansible-doc
 `ansible-doc options`
 - 作用: ansible 文档查看工具
 - 选项:
@@ -66,6 +105,12 @@ ansible -m shell -a "echo 'test' chdir=/root"
 ```
 
 ### ansible-playbook
+`ansible-playbook [options] playbook.yml [playbook2 ...]`
+- 作用: playbook 的执行命令
+- 参数: `playbook.yml...` 表示 playbook 的路经
+- 选项: `ansible-playbook` 与 `ansible` 命令行工具的选项基本类似
+  - ` --playbook-dir=BASEDIR`: playbook 的根目录，这个根目录的设置会影响 `roles/ group_vars/` 等目录的查找路经
+  - ` -t TAGS, --tags=TAGS`: 运行指定标签对应的任务
 
 ## 2.ansible 常用模块
 ansible 命令的执行是为了达到期望的状态，如果被管控主机的当前状态与命令指定的状态不一致，则执行命令，所以ansible 的命令都是通过 state 参数指定要进行的操作。
@@ -151,6 +196,18 @@ ansible test -m file -a "src=/etc/fstab dest=/tmp/fstab state=link"
 ansible test -m file -a "path=/tmp/fstab state=absent"
 ansible test -m file -a "path=/tmp/test state=touch"
 ```
+
+#### template
+`ansible -m template -a 'option'`
+- 作用: 基于 python jinja2 模板生成文件并复制到目标主机
+- 选项:
+  - `backup`：在覆盖之前将原文件备份，备份文件包含时间信息。有两个选项：yes|no
+  - `src`：要被链接的源文件的路径，只应用于`state=link`的情况
+  - `dest`：必选项。要将源文件复制到的远程主机的绝对路径，如果源文件是一个目录，那么该路径也必须是个目录
+  - `force`：如果目标主机包含该文件，但内容不同，如果设置为yes，则强制覆盖，如果为no，则只有当目标主机的目标位置不存在该文件时，才复制。默认为yes
+  - `owner`: 设置目标文件的属主
+  - `group`: 设置目标文件的属组
+  - `mode`: 设置目标文件的权限
 
 ### 2.2  命令执行
 #### command
@@ -291,6 +348,7 @@ ansible -m service -a "name=httpd state=started enabled=yes"
 ```
 
 ### 2.5 变量获取
+#### setup
 `ansible -m setup -a 'option'`
 - 作用: 获取被管控主机的所有系统参数信息
 - 选项：
