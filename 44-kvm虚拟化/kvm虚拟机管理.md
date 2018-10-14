@@ -1,139 +1,41 @@
 ## kvm 虚拟机管理
+KVM 属于主机虚拟化实现的解决方案之一，本节我们就来学习 kvm 虚拟化的原理以及如何使用 KVM 生成和管理虚拟机。
 
-## 1. KVM 架构
-KVM的组件：
-	kvm.ko：模块
-		API
-	qemu-kvm：用户空间的工具程序；
-		qemu-kvm is an open source virtualizer that provides hardware emulation for the KVM hypervisor.
+## 1. KVM 简介
+### 1.1 KVM 架构图
+![computer](../images/45/kvm_structure.jpg)
 
-	libvirt：工具箱，能与主机的虚拟化技术进行交互,在 qemu-kvm 基础上，更高级的管理工具。 Libvirt is a C toolkit to interact with the virtualization capabilities of recent versions of Linux (and other OSes). The main package includes the libvirtd server exporting the virtualization support.
+KVM由两部分组成
+- `(kvm.ko)/dev/kvm`：工作为hypervisor，在用户空间可通过系统调用ioctl()与内核中的kvm模块交互，从而完成虚拟机的创建、启动、停止、删除等各种管理功能；
+- `qemu-kvm` 进程：工作于用户空间，用于实现IO设备模拟；用于实现一个虚拟机实例；
 
-		C/S：
-			Client：
-				libvirt-client
-				virt-manager
-			Daemon：
-				libvirt-daemon
+KVM 只能模拟 CPU和内存，不能模拟 I/O 设置。因此虚拟机中的IO设备，必须通过用户空间的 `qemu-kvm` 进行模拟。
 
-快速使用kvm技术：
-	kvm 依赖硬件虚拟化，在使用前，需要检查当前系统是否支持
-	# grep -E -i "(svm|vmx)" /proc/cpuinfo
+IO 设备的虚拟化有三种方式，完全虚拟化，半虚拟化，IO透传。qemu是 完全虚拟化的解决方案，但是完全虚拟化的效率不高，因此红帽联合了其他产商开发了 virtio 这种半虚拟化技术，用于模拟各种 IO设备。
 
-	# yum install libvirt libvirt-daemon-kvm qemu-kvm virt-manager
-	# modprobe kvm
-	# lsmod|grep kvm
-	# ls /dev/kvm
-
-	# systemctl start libvirtd.service
-
-	# 创建网桥(交换机)
-	# virsh iface-bridge INTERFACE BRIDGE_NAME
-	# virt-manager
+需要注意的是 KVM 支持 x86 平台，且要求 CPU 必须支持硬件虚拟化。
 
 
+### 1.2 KVM 管理工具
+![vmm](../images/45/kvm_cmd.jpg)
 
-kvm: Kernel-based Virtual Machine
-			Qumranet公司 --> RedHat
-			(1) X86_64
-			(2) HVM:
-				Intel VT
-				AMD AMD-v
+kvm 有两套工具栈:
+1. kvm 的原生工具栈: qemu，任何其他辅助的管理工具必须以此为基础
+	- qemu-kvm: IO 模拟，并将虚拟机实例运行为一个进程
+	- qemu-img: 磁盘映像文件管理(虚拟机的硬盘)
+	- qemu-io: 对虚拟机磁盘设备文件使用的统计
+2. libvirt 家族
+	- GUI：
+		- virt-manager: 虚拟机管理工具
+		- virt-viewer: 虚拟机查看器
+		- virtinst: virt-manager 配套的命令工具
+	- CLI: 
+		- virsh: 管理和查看虚拟的统一命令行工具
 
-		KVM的组件：
-			两类组件：
-				(kvm.ko)/dev/kvm：工作为hypervisor，在用户空间可通过系统调用ioctl()与内核中的kvm模块交互，从而完成虚拟机的创建、启动、停止、删除等各种管理功能；
-				qemu-kvm进程：工作于用户空间，用于实现IO设备模拟；用于实现一个虚拟机实例；
+libvirt 是 C/S服务，要想使用必须先安装和启动 libvirtd			
 
-		KVM模块load进内存之后，系统的运行模式：
-			内核模式：GuestOS执行IO类的操作时，或其它的特殊指令操作时的模式；它也被称为“Guest-Kernel”模式；
-			用户模式：Host OS的用户空间，用于代为GuestOS发出IO请求；
-			来宾模式：GuestOS的用户模式；所有的非IO类请求；
-
-		virtio: 开源的半虚拟化技术，用于半虚拟化各种 IO设备
-
-		安装使用KVM:
-			判断CPU是否支持硬件虚拟化：
-				grep -i -E '(vmx|svm|lm)' /proc/cpuinfo
-					vmx：Intel VT-x
-					svm：AMD AMD-v
-
-			运行中的一个kvm虚拟机就是一个qemu-kvm进程，运行qemu-kvm程序并传递给它合适的选项及参数即能完成虚拟机启动，终止此进程即能关闭虚拟机；
-
-## 2. kvm工具栈：
-				qemu：
-					qemu-kvm
-					qemu-img
-				libvirt：
-					GUI：virt-manager, virt-viewer
-					CLI: virsh, virt-install
-
-					C/S：
-						libvirtd
-
-			安装：
-				(1) 装载内核模块
-					kvm：核心模块
-					kvm-intel|kvm-amd
-
-
-	使用virt-manager管理KVM
-		# yum install qemu-kvm libvirt-daemon-kvm  virt-manager
-		# modprobe kvm
-
-		# systemctl start libvirtd.service
-
-		# virt-manager &
-
-	网络虚拟化：
-		二层的虚拟网络设备：
-			kernel net bridge/brctl
-			openvswitch
-
-		CentOS 7创建物理桥，使用内核自带的桥接模块实现：
-			桥接口配置文件保留地址信息；
-				TYPE=Bridge
-				Device=BRIDGE_NAME
-
-			物理网卡配置文件：
-				删除地址、掩码和网关等相关的配置，添加
-				BRIDGE=BRIDGE_NAME
-
-			重启网络服务即可：
-
-	kvm的管理工具栈：
-		qemu：
-			qemu-kvm
-			qemu-img
-		libvirt：
-			GUI：virt-manager
-			CLI：virsh, virt-install
-
-		使用qemu-kvm管理vms：
-
-			Qemu：
-				处理器模拟器
-				仿真各种IO设备
-				将仿真设备连接至主机的物理设备
-				提供用户接口
-
-
-					示例1：
-						 ~]#  qemu-kvm -name c2 -smp 2,maxcpus=4,sockets=2,cores=2 -m 128 -drive file=/images/kvm/cos-i386.qcow2,if=virtio -vnc  :1 -daemonize -net nic,model=e1000,macaddr=52:54:00:00:00:11 -net tap,script=/etc/qemu-ifup
-					示例2：	 
-						 ~]# qemu-kvm -name winxp -smp 1,maxcpus=2,sockets=1,cores=2 -m 1024 -drive file=/data/vms/winxp.qcow2,media=disk,cache=writeback,format=qcow2 file=/tmp/winxp.iso,media=cdrom -boot order=dc,once=d -vnc :1 -net nic,model=rtl8139,macaddr=52:54:00:00:aa:11 -net tap,ifname=tap1,script=/etc/qemu-ifup -daemonize
-
-				半虚拟化：virtio
-					建议：Network IO, Disk IO使用virtio，性能会有显著提升；
-
-				dnsmasq：
-					listen-address=192.168.1.132,127.0.0.1
-					dhcp-range=192.168.1.50,192.168.1.150,48h
-					dhcp-option=3,192.168.0.1
-
-
-## 1. KVM  配置
-### 1.1 KVM 安装：
+## 2. KVM  安装配置
+### 2.1 KVM 安装
 ```
 # 1. 确保CPU支持HVM
 grep -E --color=auto "(vmx|svm)" /proc/cpuinfo
@@ -143,37 +45,66 @@ modprobe kvm-intel
 # 3. 验正：
 /dev/kvm
 ```
-### 1.2 KVM管理工具栈安装：
+
+### 2.2 KVM管理工具栈安装：
 ```
-yum grouplist | grep -i "virtualization"
-# Virtualization                  :   qemu-kvm
-# Virtualization Client    :   python-virtinst, virt-manager, virt-viewer
-# Virtualization Platform:  libvirt, libvirt-client
-# Virtualization Tools       :  libguestfs
- yum group install  virtualization
-# 使用qemu-kvm管理工具：
-yum install qemu-kvm
+yum install libvirt libvirt-daemon-kvm qemu-kvm virt-manager
+
 rpm -ql  qemu-kvm
 ln -sv /usr/libexec/qemu-kvm  /bin/qemu-kvm
 ```          
-## 2. qemu-kvm 使用示例
-### 2.1 创建虚拟机示例
+
+### 2.3 使用 libvirt 创建虚拟机
+我们可以 qemu 提供的原生工具 qemu-kvm 创建和管理虚拟机，也可以使用更高级的 libvirt。下面是使用 libvirt 创建虚拟机的一个简单示例。
+
+```
+# 1. kvm 依赖硬件虚拟化，在使用前，需要检查CPU是否支持硬件虚拟化
+grep -E -i "(svm|vmx)" /proc/cpuinfo
+
+# 2. 安装 kvm
+yum install libvirt libvirt-daemon-kvm qemu-kvm virt-manager
+modprobe kvm
+lsmod|grep kvm
+ls /dev/kvm
+
+# 3. 启动 libvirtd 服务
+systemctl start libvirtd.service
+
+# 4. IO虚拟化: 半虚拟化 - 创建网桥(交换机)
+# virsh iface-bridge INTERFACE BRIDGE_NAME
+# virt-manager
+```
+
+运行中的一个kvm虚拟机就是一个qemu-kvm进程，运行qemu-kvm程序并传递给它合适的选项及参数即能完成虚拟机启动，终止此进程即能关闭虚拟机；
+
+
+## 3. 使用 qemu-kvm 创建虚拟机
+### 3.1 创建虚拟机示例
 ```
 # cirros project: 为cloud环境测试vm提供的微缩版Linux；
 # 1. 启动第一个虚拟：
 qemu-kvm -m 128 -smp 2 -name test -hda /images/kvm/cirros-0.3.4-i386.disk.img
+
 # 2. 用-drive指定磁盘映像文件：
 qemu-kvm -m 128 -name test -smp 2 -drive file=/images/kvm/cirros-0.3.4-i386-disk.img, \
                 if=virtio,media=disk,cache=writeback,format=qcow2
+
 # 3. 通过cdrom启动winxp的安装：
 qemu-kvm -name winxp -smp 4,sockets=1,cores=2,threads=2 -m 512 -drive  \
                   file=/images/kvm/winxp.img,if=ide,media=disk,
                   cache=writeback,format=qcow2 -drive file=/root/winxp_ghost.iso,media=cdrom
+
 # 4. 指定使用桥接网络接口：
 qemu-kvm -m 128 -name test -smp 2 -drive file=/images/kvm/cirros-0.3.4-i386-disk.img, \
                  if=virtio,media=disk,cache=writeback,format=qcow2 -net nic -net tap, \
                  script=/etc/if-up,downscript=no -nographic
+
+示例1：
+	 ~]#  qemu-kvm -name c2 -smp 2,maxcpus=4,sockets=2,cores=2 -m 128 -drive file=/images/kvm/cos-i386.qcow2,if=virtio -vnc  :1 -daemonize -net nic,model=e1000,macaddr=52:54:00:00:00:11 -net tap,script=/etc/qemu-ifup
+示例2：	 
+	 ~]# qemu-kvm -name winxp -smp 1,maxcpus=2,sockets=1,cores=2 -m 1024 -drive file=/data/vms/winxp.qcow2,media=disk,cache=writeback,format=qcow2 file=/tmp/winxp.iso,media=cdrom -boot order=dc,once=d -vnc :1 -net nic,model=rtl8139,macaddr=52:54:00:00:aa:11 -net tap,ifname=tap1,script=/etc/qemu-ifup -daemonize
 ```
+
 ### 2.2  创建成功的反馈信息
 ```
 # 显示选项：
@@ -184,6 +115,7 @@ qemu-kvm -m 128 -name test -smp 2 -drive file=/images/kvm/cirros-0.3.4-i386-disk
 yum install tigervnc-server
 vncpasswd
 vncserver :N
+
 # Centos 7
 yum install tigervnc
 vncviewer  :N
@@ -193,7 +125,7 @@ vncviewer  :N
 # change vnc password命令设置密码；
 ```      
 
- ## 3. qemu-kum使用文档
+## 3. qemu-kum使用文档
 `qemu-kvm [options] [disk_image]`
 options:
 - 标准选项；
@@ -293,6 +225,7 @@ options:
 	Ctrl-a, c: 在console和monitor之间切换
 	Ctrl-a, h: 显示帮助信息
 ```
+
 ### 3.3 386平台专用选项
 - `-no-acpi`：禁用ACPI功能，GuestOS与ACPI出现兼容问题时使用此选项；
 - `-balloon none`：禁用balloon设备；
@@ -340,6 +273,7 @@ if [ -n "$1" ]; then
 exit 1
 fi
 ```
+
 ```
 # cat /etc/qemu-ifdown
 #!/bin/bash
@@ -354,6 +288,7 @@ else
 	exit 1
 fi
 ```
+
 ### 3.5 一个使用示例
 ```
 # 下面的命令创建了一个名为rhel5.8的虚拟机，
@@ -366,6 +301,7 @@ qemu-kvm -name "rhel5.8" -m 512 \
 		-drive file=/isos/rhel-5.8.iso,index=1,media=cdrom \
 		-net nic,model=virtio,macaddr=52:54:00:A5:41:1E \
 		-vga cirrus -balloon virtio
+		
 # 在虚拟机创建并安装GuestOS完成之后，可以免去光驱设备直接启动之。命令如下所示。
 qemu-kvm -name "rhel5.8" -m 512 \
 		-smp 2 -boot d \
@@ -373,6 +309,7 @@ qemu-kvm -name "rhel5.8" -m 512 \
 		-net nic,model=virtio,macaddr=52:54:00:A5:41:1E \
 		-vga cirrus -balloon virtio
 ```
+
 ## 4. 使用qemu-img管理磁盘映像
 `qemu-img  subcommand  [options]`
 1. 作用:  qemu-img是qemu用来实现磁盘映像管理的工具组件，其有许多子命令，分别用于实现不同的管理功能，
