@@ -190,6 +190,6 @@ EOF
 ### 3.2 Node 初始化
 ```bash
 # 1. 执行镜像下载脚本，准备好相关镜像
-# 2. 将节点加入集群
+# 2. 将节点加入集群, 需要注意节点的主机名不能与 Master 节点同名
 kubeadm join 192.168.1.156:6443 --token rtkmuo.i5uvzvd9nl2b7tzi --discovery-token-ca-cert-hash sha256:b255be80f1c5861b53b3a2ec8d69fd7b1f28f9ab450fbffc6b83c1f4d688876f --ignore-preflight-errors=Swap
 ```
