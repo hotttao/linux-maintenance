@@ -76,7 +76,7 @@ done
 ```
 
 
-### 1.3 初始化 Master 节点
+### 1.4 初始化 Master 节点
 ```bash
 kubeadm init --kubernetes-version=v1.12.2  --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12  --ignore-preflight-errors=Swap
 
@@ -96,65 +96,39 @@ kubectl get pods
 kubectl get ns
 ```
 
-### 1.4 部署网络组件
+### 1.5 部署网络组件
 初始化 Master 还有非常重要的一步，就是部署网络组件，否则各个 pod 等组件之间是无法通信的
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
 
 kubectl get pods
 ```
 
 
-## 2. 重启 k8s 集群
-每次关机之后，k8s 集群再次开机时就会生效，因此需要重新进行配置。
+### 1.6 k8s 集群重至
+如果配置过程中出现了错误，想重新配置集群， 可以使用 `kubeadm reset` 对整个集群进行重至，然后重新使用 `kubeadm init` 进行初始化创建。但是需要注意的时，`kubeadm reset` 不会重至 flannel 网络，想要完全重至可使用以下脚本
 
-### 2.1 kubeadm 重至
-```bash
-kubeadm reset
-```
 
-### 2.2 下载镜像
-执行下面的下载脚本 `/root/kubernetes.sh`
 ```bash
 #!/bin/bash
-sudo docker login --username=1556824234@qq.com registry.cn-qingdao.aliyuncs.com
-sysctl net.bridge.bridge-nf-call-ip6tables = 1
-sysctl net.bridge.bridge-nf-call-iptables = 1
-
-base=k8s.gcr.io
-aliyun="registry.cn-qingdao.aliyuncs.com/htttao"
-images=(kube-apiserver:v1.12.2 kube-controller-manager:v1.12.2 kube-scheduler:v1.12.2 kube-proxy:v1.12.2  pause:3.1  etcd:3.2.24 coredns:1.2.2)
-
-for i in ${images[@]}
-do
-	docker	pull $aliyun/$i
-	docker  tag  $aliyun/$i  $base/$i
-done
+kubeadm reset
+systemctl stop kubelet
+systemctl stop docker
+rm -rf /var/lib/cni/
+rm -rf /var/lib/kubelet/*
+rm -rf /etc/cni/
+ifconfig cni0 down
+ifconfig flannel.1 down
+ifconfig docker0 down
+ip link delete cni0
+ip link delete flannel.1
+systemctl start docker
 ```
 
-### 2.3 重新初始化
-```bash
-# 系统参数初始化
-sysctl -w net.bridge.bridge-nf-call-ip6tables=1
-sysctl -w net.bridge.bridge-nf-call-iptables=1
-iptables -F
+## 2. 安装脚本
+整个集群安装比较复杂，因此我将上述过程写成了两个脚本。因此按次序执行下面脚本然后进行 `kubeadm init` 进行集群初始化即可完成配置。
 
-
-kubeadm init --kubernetes-version=v1.12.2  --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12  --ignore-preflight-errors=Swap
-
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-
-kubeadm join 192.168.1.156:6443 --token rtkmuo.i5uvzvd9nl2b7tzi --discovery-token-ca-cert-hash sha256:b255be80f1c5861b53b3a2ec8d69fd7b1f28f9ab450fbffc6b83c1f4d688876f
-
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-```
-
-## 3. Node 节点配置
-Node 节点配置与上述过程类似，只不过最后的初始化不是创建，而是加入到 master 代表的集群中。
-
-### 3.1 基础环境配置
-环境配置和软件安装跟 Master 节点没有区别，可通过下面的脚本直接完成
-
+### 2.1 基础环境配置脚本
 ```bash
 #!/bin/bash
 # 1. 设置系统参数
@@ -187,9 +161,50 @@ cat << EOF > /etc/docker/daemon.json
 EOF
 ```
 
-### 3.2 Node 初始化
+### 2.2 镜像下载脚本
+执行下面的下载脚本 `/root/kubernetes.sh`
 ```bash
-# 1. 执行镜像下载脚本，准备好相关镜像
-# 2. 将节点加入集群, 需要注意节点的主机名不能与 Master 节点同名
-kubeadm join 192.168.1.156:6443 --token rtkmuo.i5uvzvd9nl2b7tzi --discovery-token-ca-cert-hash sha256:b255be80f1c5861b53b3a2ec8d69fd7b1f28f9ab450fbffc6b83c1f4d688876f --ignore-preflight-errors=Swap
+#!/bin/bash
+sudo docker login --username=1556824234@qq.com registry.cn-qingdao.aliyuncs.com
+sysctl net.bridge.bridge-nf-call-ip6tables=1
+sysctl net.bridge.bridge-nf-call-iptables=1
+
+base=k8s.gcr.io
+aliyun="registry.cn-qingdao.aliyuncs.com/htttao"
+images=(kube-apiserver:v1.12.2 kube-controller-manager:v1.12.2 kube-scheduler:v1.12.2 kube-proxy:v1.12.2  pause:3.1  etcd:3.2.24 coredns:1.2.2)
+
+for i in ${images[@]}
+do
+	docker	pull $aliyun/$i
+	docker  tag  $aliyun/$i  $base/$i
+done
+
+flannel=flannel:v0.10.0-amd64
+docker    pull $aliyun/$flannel
+docker    tag  $aliyun/$flannel  quay.io/coreos/$flannel
+```
+
+### 2.3 集群初始化
+```bash
+kubeadm init --kubernetes-version=v1.12.2  --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12  --ignore-preflight-errors=Swap
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g)  $HOME/.kube/config
+
+# Node 节点的加入集群的命令
+kubeadm join 192.168.1.184:6443 --token w1b9i6.ryqstfgjmob2z8xp --discovery-token-ca-cert-hash sha256:0d3404f3919116e7efa56b2e0694c1397cd44915ed13f16d9e6e7600ada64c4c  --ignore-preflight-errors=Swap
+
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+```
+
+## 3. Node 节点配置
+Node 节点的配置与 Master 过程类似，以此执行上述两个脚本即可，唯一的区别是在初始化时执行的是 `kubeadm join`.
+
+```bash
+# 1. 基础环境配置脚本
+# 2. 执行镜像下载脚本，准备好相关镜像
+# 3. 将节点加入集群, 需要注意节点的主机名不能与 Master 节点同名
+kubeadm join 192.168.1.184:6443 --token w1b9i6.ryqstfgjmob2z8xp --discovery-token-ca-cert-hash sha256:0d3404f3919116e7efa56b2e0694c1397cd44915ed13f16d9e6e7600ada64c4c  --ignore-preflight-errors=Swap
 ```
