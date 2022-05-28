@@ -5,3 +5,5 @@
 
 此博客用于记录和整理 Linux 运维知识和使用经验。一来督促自己养成写博客的习惯，二来提高学习效率，三来便于以后查询。
 博文将按照 5w1h 思绪写作。即 what(是什么)，why(为什么会出现)，when(什么时候会用到)，where(在什么地方用)，who(谁会用)，how(怎么用)。
+
+gitbook: https://hotttao.gitbooks.io/linux-maintenance/content/
